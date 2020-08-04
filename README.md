@@ -1,2 +1,2 @@
 # TkReflect
-circa 1995 Tcl/Tk GUI to controll George Randall's reflectivity code 
+circa 1995 Tcl/Tk/Expect GUI to controll George Randall's reflectivity code 
