@@ -1,0 +1,594 @@
+
+
+proc ShowWindow.moment {args} {# xf ignore me 7
+
+  toplevel .moment 
+
+  global tkVersion
+  wm title .moment {moment}
+
+  frame .moment.pt \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .moment.pt.axislabel \
+    -borderwidth {2}
+
+  label .moment.pt.axislabel.labelp \
+    -text {P}
+
+  label .moment.pt.axislabel.labelt \
+    -text {T}
+
+  pack append .moment.pt.axislabel \
+    .moment.pt.axislabel.labelt {bottom frame center} \
+    .moment.pt.axislabel.labelp {bottom frame center}
+
+  frame .moment.pt.azimuth \
+    -borderwidth {2}
+
+  label .moment.pt.azimuth.labelaz \
+    -text {Azimuth}
+
+  entry .moment.pt.azimuth.entrypaz \
+    -relief {sunken} \
+    -textvariable {paz} \
+    -width {10}
+
+  entry .moment.pt.azimuth.entrytaz \
+    -relief {sunken} \
+    -textvariable {taz} \
+    -width {10}
+
+  pack append .moment.pt.azimuth \
+    .moment.pt.azimuth.labelaz {top frame center fillx} \
+    .moment.pt.azimuth.entrypaz {top frame center} \
+    .moment.pt.azimuth.entrytaz {top frame center}
+
+  frame .moment.pt.plunge \
+    -borderwidth {2}
+
+  label .moment.pt.plunge.labelpl \
+    -text {Plunge}
+
+  entry .moment.pt.plunge.entryppl \
+    -relief {sunken} \
+    -textvariable {ppl} \
+    -width {10}
+
+  entry .moment.pt.plunge.entrytpl \
+    -relief {sunken} \
+    -textvariable {tpl} \
+    -width {10}
+
+  pack append .moment.pt.plunge \
+    .moment.pt.plunge.labelpl {top frame center fillx} \
+    .moment.pt.plunge.entryppl {top frame center} \
+    .moment.pt.plunge.entrytpl {top frame center}
+
+  button .moment.pt.pt2mij \
+    -command {pt2slipnormal $taz $tpl $paz $ppl nuvector uvector
+              slipnormal2sds strikea dipa slipa nuvector uvector
+              slipnormal2sds strikeb dipb slipb uvector nuvector
+              slipnormal2mij mtarray nuvector uvector
+              mtxyz2mtcmt mtarray mtcmtarray } \
+    -text {from P T} \
+    -width {12}
+
+  pack append .moment.pt \
+    .moment.pt.axislabel {left frame center filly} \
+    .moment.pt.azimuth {left frame center} \
+    .moment.pt.plunge {left frame center} \
+    .moment.pt.pt2mij {right frame center filly}
+
+  frame .moment.strikedipslip \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .moment.strikedipslip.labels \
+    -borderwidth {2}
+
+  label .moment.strikedipslip.labels.strike \
+    -text {Strike} \
+    -width {6}
+
+  label .moment.strikedipslip.labels.dip \
+    -text {Dip} \
+    -width {6}
+
+  label .moment.strikedipslip.labels.slip \
+    -text {Slip}
+
+  pack append .moment.strikedipslip.labels \
+    .moment.strikedipslip.labels.slip {bottom frame center} \
+    .moment.strikedipslip.labels.dip {bottom frame center} \
+    .moment.strikedipslip.labels.strike {bottom frame center}
+
+  frame .moment.strikedipslip.entries1 \
+    -borderwidth {2}
+
+  label .moment.strikedipslip.entries1.label \
+    -text {Fault Plane} \
+    -width {8}
+
+  entry .moment.strikedipslip.entries1.strike \
+    -relief {sunken} \
+    -textvariable {strikea} \
+    -width {10}
+
+  entry .moment.strikedipslip.entries1.dip \
+    -relief {sunken} \
+    -textvariable {dipa} \
+    -width {10}
+
+  entry .moment.strikedipslip.entries1.slip \
+    -relief {sunken} \
+    -textvariable {slipa} \
+    -width {10}
+
+  pack append .moment.strikedipslip.entries1 \
+    .moment.strikedipslip.entries1.label {top frame center} \
+    .moment.strikedipslip.entries1.strike {top frame center pady 2} \
+    .moment.strikedipslip.entries1.dip {top frame center pady 2} \
+    .moment.strikedipslip.entries1.slip {top frame center pady 2}
+
+
+  frame .moment.strikedipslip.entries2 \
+    -borderwidth {2}
+
+  label .moment.strikedipslip.entries2.label \
+    -text {Aux Plane} \
+    -width {8}
+
+  entry .moment.strikedipslip.entries2.strike \
+    -relief {sunken} \
+    -textvariable {strikeb} \
+    -width {10}
+
+  entry .moment.strikedipslip.entries2.dip \
+    -relief {sunken} \
+    -textvariable {dipb} \
+    -width {10}
+
+  entry .moment.strikedipslip.entries2.slip \
+    -relief {sunken} \
+    -textvariable {slipb} \
+    -width {10}
+
+  pack append .moment.strikedipslip.entries2 \
+    .moment.strikedipslip.entries2.label {top frame center} \
+    .moment.strikedipslip.entries2.strike {top frame center pady 2} \
+    .moment.strikedipslip.entries2.dip {top frame center pady 2} \
+    .moment.strikedipslip.entries2.slip {top frame center pady 2}
+
+  button .moment.strikedipslip.sdstomij \
+    -command {sds2slipnormal $strikea $dipa $slipa nuvector uvector
+              slipnormal2sds strikeb dipb slipb uvector nuvector
+              slipnormal2pt taz tpl paz ppl nuvector uvector
+              slipnormal2mij mtarray nuvector uvector
+              mtxyz2mtcmt mtarray mtcmtarray } \
+    -text {from SDS} \
+    -width {12}
+
+  pack append .moment.strikedipslip \
+    .moment.strikedipslip.labels {left frame center filly} \
+    .moment.strikedipslip.entries1 {left frame center} \
+    .moment.strikedipslip.entries2 {left frame center} \
+    .moment.strikedipslip.sdstomij {right frame center filly}
+
+  frame .moment.interchange \
+    -borderwidth {2} \
+    -relief {raised}
+
+  button .moment.interchange.button \
+    -command {set temp $strikea 
+              set strikea $strikeb
+              set strikeb $temp
+              set temp $dipa 
+              set dipa $dipb
+              set dipb $temp
+              set temp $slipa 
+              set slipa $slipb
+              set slipb $temp
+              foreach i {x y z} {
+                set temp $nuvector($i) 
+                set nuvector($i) $uvector($i)
+                set uvector($i) $temp
+              }
+              unset temp
+              } \
+    -text {Interchange Fault and Aux} 
+
+  pack append .moment.interchange \
+    .moment.interchange.button {top frame center fillx}
+
+  frame .moment.slipnormal \
+    -borderwidth {2} \
+    -relief {raised}
+ 
+  frame .moment.slipnormal.slip \
+    -borderwidth {2}
+ 
+  label .moment.slipnormal.slip.label \
+    -text {Slip Vector} \
+    -width {12}
+ 
+  entry .moment.slipnormal.slip.ux \
+    -relief {sunken} \
+    -textvariable {uvector(x)} \
+    -width {12}
+ 
+  entry .moment.slipnormal.slip.uy \
+    -relief {sunken} \
+    -textvariable {uvector(y)} \
+    -width {12}
+ 
+  entry .moment.slipnormal.slip.uz \
+    -relief {sunken} \
+    -textvariable {uvector(z)} \
+    -width {12}
+ 
+  pack append .moment.slipnormal.slip \
+    .moment.slipnormal.slip.label {top frame center} \
+    .moment.slipnormal.slip.ux {top frame center pady 1} \
+    .moment.slipnormal.slip.uy {top frame center pady 1} \
+    .moment.slipnormal.slip.uz {top frame center pady 1}
+ 
+ 
+  frame .moment.slipnormal.normal \
+    -borderwidth {2}
+ 
+  label .moment.slipnormal.normal.label \
+    -text {Normal Vector}
+ 
+  entry .moment.slipnormal.normal.nux \
+    -relief {sunken} \
+    -textvariable {nuvector(x)} \
+    -width {12}
+ 
+  entry .moment.slipnormal.normal.nuy \
+    -relief {sunken} \
+    -textvariable {nuvector(y)} \
+    -width {12}
+ 
+  entry .moment.slipnormal.normal.nuz \
+    -relief {sunken} \
+    -textvariable {nuvector(z)} \
+    -width {12}
+ 
+  pack append .moment.slipnormal.normal \
+    .moment.slipnormal.normal.label {top frame center} \
+    .moment.slipnormal.normal.nux {top frame center pady 1} \
+    .moment.slipnormal.normal.nuy {top frame center pady 1} \
+    .moment.slipnormal.normal.nuz {top frame center pady 1}
+ 
+  frame .moment.slipnormal.labels \
+    -borderwidth {2}
+ 
+  label .moment.slipnormal.labels.x \
+    -text { x (north)} \
+    -width {7}
+ 
+  label .moment.slipnormal.labels.y \
+    -text {y (east)} \
+    -width {7}
+ 
+  label .moment.slipnormal.labels.z \
+    -text { z (down)} \
+    -width {8}
+
+  pack append .moment.slipnormal.labels \
+    .moment.slipnormal.labels.z {bottom frame center} \
+    .moment.slipnormal.labels.y {bottom frame center} \
+    .moment.slipnormal.labels.x {bottom frame center}
+ 
+  button .moment.slipnormal.fromslipnormal \
+    -command {slipnormal2mij mtarray nuvector uvector
+              slipnormal2pt taz tpl paz ppl nuvector uvector 
+              slipnormal2sds strikea dipa slipa nuvector uvector
+              slipnormal2sds strikeb dipb slipb uvector nuvector
+              mtxyz2mtcmt mtarray mtcmtarray } \
+    -text {from Normal Slip} 
+ 
+  pack append .moment.slipnormal \
+    .moment.slipnormal.labels {left frame center} \
+    .moment.slipnormal.normal {left frame center} \
+    .moment.slipnormal.slip {left frame center} \
+    .moment.slipnormal.fromslipnormal {right frame center filly}
+ 
+######
+
+  frame .moment.tensorcmt \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .moment.tensorcmt.labels \
+    -borderwidth {2}
+
+  label .moment.tensorcmt.labels.labelmij \
+    -text {CMT Mij} \
+    -width {6}
+
+  label .moment.tensorcmt.labels.x \
+    -text {R} \
+    -width {6}
+
+  label .moment.tensorcmt.labels.y \
+    -text {delta} \
+    -width {6}
+
+  label .moment.tensorcmt.labels.z \
+    -text {phi} \
+    -width {6}
+
+  pack append .moment.tensorcmt.labels \
+    .moment.tensorcmt.labels.labelmij {top frame center} \
+    .moment.tensorcmt.labels.x {top frame center} \
+    .moment.tensorcmt.labels.y {top frame center} \
+    .moment.tensorcmt.labels.z {top frame center}
+
+  frame .moment.tensorcmt.col1 \
+    -borderwidth {2}
+
+  label .moment.tensorcmt.col1.label \
+    -text {r} \
+    -width {11}
+
+  entry .moment.tensorcmt.col1.mxx \
+    -relief {sunken} \
+    -textvariable {mtcmtarray(rr)} \
+    -width {11}
+
+  pack append .moment.tensorcmt.col1 \
+    .moment.tensorcmt.col1.label {top frame center} \
+    .moment.tensorcmt.col1.mxx {top frame center}
+
+  frame .moment.tensorcmt.col2 \
+    -borderwidth {2}
+
+  label .moment.tensorcmt.col2.label \
+    -text {delta} \
+    -width {6}
+
+  entry .moment.tensorcmt.col2.mxy \
+    -relief {sunken} \
+    -textvariable {mtcmtarray(rs)} \
+    -width {11}
+
+  entry .moment.tensorcmt.col2.myy \
+    -relief {sunken} \
+    -textvariable {mtcmtarray(ss)} \
+    -width {11}
+
+  pack append .moment.tensorcmt.col2 \
+    .moment.tensorcmt.col2.label {top frame center} \
+    .moment.tensorcmt.col2.mxy {top frame center} \
+    .moment.tensorcmt.col2.myy {top frame center}
+
+  frame .moment.tensorcmt.col3 \
+    -borderwidth {2}
+
+  label .moment.tensorcmt.col3.label \
+    -text {phi} \
+    -width {11}
+
+  entry .moment.tensorcmt.col3.mxz \
+    -relief {sunken} \
+    -textvariable {mtcmtarray(re)} \
+    -width {11}
+
+  entry .moment.tensorcmt.col3.myz \
+    -relief {sunken} \
+    -textvariable {mtcmtarray(se)} \
+    -width {11}
+
+  entry .moment.tensorcmt.col3.mzz \
+    -relief {sunken} \
+    -textvariable {mtcmtarray(ee)} \
+    -width {11}
+
+  pack append .moment.tensorcmt.col3 \
+    .moment.tensorcmt.col3.label {top frame center} \
+    .moment.tensorcmt.col3.mxz {top frame center} \
+    .moment.tensorcmt.col3.myz {top frame center} \
+    .moment.tensorcmt.col3.mzz {top frame center}
+
+  frame .moment.tensorcmt.buttons \
+    -borderwidth {2}
+
+  button .moment.tensorcmt.buttons.fromcmt \
+    -command {mtcmt2mtxyz mtcmtarray mtarray } \
+    -text {from CMT} 
+
+  button .moment.tensorcmt.buttons.tocmt \
+    -command {mtxyz2mtcmt mtarray mtcmtarray } \
+    -text {to CMT} 
+
+  pack append .moment.tensorcmt.buttons \
+    .moment.tensorcmt.buttons.fromcmt {top frame n} \
+    .moment.tensorcmt.buttons.tocmt {top frame n}
+ 
+  pack append .moment.tensorcmt \
+    .moment.tensorcmt.buttons {right fram n} \
+    .moment.tensorcmt.labels {left frame n} \
+    .moment.tensorcmt.col1 {left frame n} \
+    .moment.tensorcmt.col2 {left frame n} \
+    .moment.tensorcmt.col3 {left frame n}
+
+######
+ 
+  frame .moment.tensor \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .moment.tensor.labels \
+    -borderwidth {2}
+
+  label .moment.tensor.labels.labelmij \
+    -text {Mij} \
+    -width {6}
+
+  label .moment.tensor.labels.x \
+    -text {X} \
+    -width {6}
+
+  label .moment.tensor.labels.y \
+    -text {Y} \
+    -width {6}
+
+  label .moment.tensor.labels.z \
+    -text {Z} \
+    -width {6}
+
+  pack append .moment.tensor.labels \
+    .moment.tensor.labels.labelmij {top frame center} \
+    .moment.tensor.labels.x {top frame center} \
+    .moment.tensor.labels.y {top frame center} \
+    .moment.tensor.labels.z {top frame center}
+
+  frame .moment.tensor.col1 \
+    -borderwidth {2}
+
+  label .moment.tensor.col1.label \
+    -text {X} \
+    -width {11}
+
+  entry .moment.tensor.col1.mxx \
+    -relief {sunken} \
+    -textvariable {mtarray(xx)} \
+    -width {11}
+
+  pack append .moment.tensor.col1 \
+    .moment.tensor.col1.label {top frame center} \
+    .moment.tensor.col1.mxx {top frame center}
+
+  frame .moment.tensor.col2 \
+    -borderwidth {2}
+
+  label .moment.tensor.col2.label \
+    -text {Y} \
+    -width {6}
+
+  entry .moment.tensor.col2.mxy \
+    -relief {sunken} \
+    -textvariable {mtarray(xy)} \
+    -width {11}
+
+  entry .moment.tensor.col2.myy \
+    -relief {sunken} \
+    -textvariable {mtarray(yy)} \
+    -width {11}
+
+  pack append .moment.tensor.col2 \
+    .moment.tensor.col2.label {top frame center} \
+    .moment.tensor.col2.mxy {top frame center} \
+    .moment.tensor.col2.myy {top frame center}
+
+  frame .moment.tensor.col3 \
+    -borderwidth {2}
+
+  label .moment.tensor.col3.label \
+    -text {Z} \
+    -width {11}
+
+  entry .moment.tensor.col3.mxz \
+    -relief {sunken} \
+    -textvariable {mtarray(xz)} \
+    -width {11}
+
+  entry .moment.tensor.col3.myz \
+    -relief {sunken} \
+    -textvariable {mtarray(yz)} \
+    -width {11}
+
+  entry .moment.tensor.col3.mzz \
+    -relief {sunken} \
+    -textvariable {mtarray(zz)} \
+    -width {11}
+
+  pack append .moment.tensor.col3 \
+    .moment.tensor.col3.label {top frame center} \
+    .moment.tensor.col3.mxz {top frame center} \
+    .moment.tensor.col3.myz {top frame center} \
+    .moment.tensor.col3.mzz {top frame center}
+
+  pack append .moment.tensor \
+    .moment.tensor.labels {left frame n} \
+    .moment.tensor.col1 {left frame n} \
+    .moment.tensor.col2 {left frame n} \
+    .moment.tensor.col3 {left frame n}
+ 
+######
+
+  frame .moment.magnitude \
+    -relief {raised} \
+    -borderwidth {2}
+ 
+  label .moment.magnitude.label \
+    -text {Mw} \
+    -width {4}
+ 
+  entry .moment.magnitude.mw \
+    -relief {sunken} \
+    -textvariable {mw} \
+    -width {8}
+ 
+#
+# Mw to Mo conversion from Lay and Wallace p. 384, I assumed that Mo is in 
+#    newton meters hence multiply by 10^7 to change to dyne cm
+#    (1 Newton = 10^5 dynes and 1 m = 10^2 cm)
+#
+  button .moment.magnitude.mwtomo \
+    -command {set moment [expr pow(10,($mw+10.73)*1.5-7.0)]} \
+    -text {Mw to Mo (N m)} \
+    -width {17}
+ 
+  label .moment.magnitude.labelmo \
+    -text {Mo} \
+    -width {4}
+ 
+  entry .moment.magnitude.mo \
+    -relief {sunken} \
+    -textvariable {moment} \
+    -width {12}
+ 
+  pack append .moment.magnitude \
+    .moment.magnitude.mw {left frame center} \
+    .moment.magnitude.label {left frame center} \
+    .moment.magnitude.mwtomo {left frame center} \
+    .moment.magnitude.labelmo {left frame center} \
+    .moment.magnitude.mo {left frame center}
+ 
+  button .moment.close \
+    -command {DestroyWindow.moment} \
+    -text {Close}
+
+  pack append .moment \
+    .moment.pt {top frame w fillx} \
+    .moment.strikedipslip {top frame w fillx} \
+    .moment.interchange {top frame w fillx} \
+    .moment.slipnormal {top frame w fillx} \
+    .moment.tensorcmt {top frame w fillx} \
+    .moment.tensor {top frame w fillx} \
+    .moment.magnitude {top frame w fillx} \
+    .moment.close {top frame center fillx}
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree .moment"
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+proc DestroyWindow.moment {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .moment]" != ""} {
+      global xfShowWindow.moment
+      set xfShowWindow.moment 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .moment; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .moment"
+    update
+  }
+}

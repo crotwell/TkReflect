@@ -1,0 +1,1209 @@
+#
+proc UpdateClock {percentdone} {
+  if {$percentdone < .99} {
+  .frame_clock.clock create arc 12 0 88 75 -start 90 \
+      -style pieslice -fill black -extent [expr -360.0*$percentdone]
+  } else {
+     .frame_clock.clock create oval 12 0 88 75 -fill black
+  }
+  update idletasks
+}
+#
+proc MakeArraySpacing {} {
+   global distance singledistance 
+   global rdistances numrdist stalist evtdistaz
+
+   if {$distance>0} {
+      set singledistance $distance
+   }
+   set distance -1.0
+   CalcArrayDistAz
+   set rdistances ""
+   set numrdist 0
+   foreach sta $stalist {
+      incr numrdist
+      append rdistances $evtdistaz($sta,dist) " "
+   }
+}
+
+# Procedure: SendCommand 
+proc SendCommand {thestring} {
+   global spawn_id
+   global localprompt remoteprompt
+   set timeout 60
+   exp_send -- "$thestring"
+   expect {
+      -re "$remoteprompt" {return 0}
+      timeout {send_error "Timedout after $thestring\n"
+               return 1
+      }
+   }
+}
+
+proc GFConvert {} {
+global stalist sourcedepth
+global runmessage
+global azimuth
+global evtdistaz
+global moment mtarray
+global paz ppl taz tpl
+global nuvector uvector
+global typedistance
+global tsynthyn
+global codetype
+global gfcombinecleanup
+global flatsourcedepth flatreceiverdepth
+
+  if {$typedistance == "irregArray" && $tsynthyn == 1 && \
+      $codetype != "mgenkennett" && $codetype != "diffkennett"} {
+   foreach sta $stalist {
+     set runmessage "gfconvert for $sta"
+     update idletasks
+
+#
+#  If we flattened the source depth then we need to use the flattened depth
+#  to get the file name correct.
+     if {$flatsourcedepth} {
+       set temp_sourcedepth $sourcedepth
+       set sourcedepth [expr 6371.0 * log(6371.0 / (6371.0 - $sourcedepth))]
+     }
+     if {$sourcedepth == int($sourcedepth)} {
+        set tempdepthstr [format "%4.0f" $sourcedepth]
+     } elseif {(0.0 <= $sourcedepth)&&($sourcedepth<10.0)} {
+        set tempdepthstr [format "%3.1f" $sourcedepth]
+     } elseif {(10.0 <= $sourcedepth)&&($sourcedepth<100.0)} {
+        set tempdepthstr [format "%4.1f" $sourcedepth]
+     } elseif {$sourcedepth>=100.0} {
+        set tempdepthstr [format "%5.1f" $sourcedepth]
+     }
+     if {$flatsourcedepth} {
+        set sourcedepth $temp_sourcedepth
+        unset temp_sourcedepth
+     }
+     regsub -all " " $tempdepthstr 0 tempdepthstr
+     if {$evtdistaz($sta,dist) == int($evtdistaz($sta,dist))} {
+        set tempdiststr [format "%4.0f" $evtdistaz($sta,dist)]
+     } elseif {(10.0<=$evtdistaz($sta,dist))&&($evtdistaz($sta,dist)<100.0)} {
+        set tempdiststr [format "%4.1f" $evtdistaz($sta,dist)]
+     } elseif {$evtdistaz($sta,dist)>=100.0} {
+        set tempdiststr [format "%5.1f" $evtdistaz($sta,dist)]
+     }
+     regsub -all " " $tempdiststr 0 tempdiststr
+
+     set tempstr "r_${tempdiststr}_${tempdepthstr}"
+
+     catch {exec gfconvert $tempstr $sta 1} junk
+   }
+   set runmessage "Done."
+   }
+}
+
+#
+proc GFCombine {} {
+global stalist sourcedepth 
+global runmessage
+global azimuth
+global evtdistaz 
+global moment mtarray
+global paz ppl taz tpl
+global nuvector uvector
+global typedistance
+global tsynthyn
+global codetype
+global gfcombinecleanup
+global flatsourcedepth flatreceiverdepth
+
+  if {$typedistance == "irregArray" && $tsynthyn == 1 && \
+      $codetype != "mgenkennett" && $codetype != "diffkennett"} {
+   foreach sta $stalist {
+     set runmessage "gfcombine for $sta"
+     set pid [spawn gfcombine]
+     puts "spawn in GFCombine $pid"
+     expect "What kind of GFs, Langston (1), Randall (2)?\r\n"
+     exp_send "2\r"
+     expect "Enter the basename for any component.\r\n"
+     expect "e.g. r_0300_0.0\r\n"
+
+#
+#  If we flattened the source depth then we need to use the flattened depth
+#  to get the file name correct.
+     if {$flatsourcedepth} {
+       set temp_sourcedepth $sourcedepth
+       set sourcedepth [expr 6371.0 * log(6371.0 / (6371.0 - $sourcedepth))]
+     }
+     if {$sourcedepth == int($sourcedepth)} {
+        set tempdepthstr [format "%4.0f" $sourcedepth]
+     } elseif {(0.0 <= $sourcedepth)&&($sourcedepth<10.0)} {
+        set tempdepthstr [format "%3.1f" $sourcedepth]
+     } elseif {(10.0 <= $sourcedepth)&&($sourcedepth<100.0)} {
+        set tempdepthstr [format "%4.1f" $sourcedepth]
+     } elseif {$sourcedepth>=100.0} {
+        set tempdepthstr [format "%5.1f" $sourcedepth]
+     }
+     if {$flatsourcedepth} {
+        set sourcedepth $temp_sourcedepth
+        unset temp_sourcedepth
+     }
+     regsub -all " " $tempdepthstr 0 tempdepthstr
+     if {$evtdistaz($sta,dist) == int($evtdistaz($sta,dist))} {
+        set tempdiststr [format "%4.0f" $evtdistaz($sta,dist)]
+     } elseif {(10.0<=$evtdistaz($sta,dist))&&($evtdistaz($sta,dist)<100.0)} {
+        set tempdiststr [format "%4.1f" $evtdistaz($sta,dist)]
+     } elseif {$evtdistaz($sta,dist)>=100.0} {
+        set tempdiststr [format "%5.1f" $evtdistaz($sta,dist)]
+     }
+     regsub -all " " $tempdiststr 0 tempdiststr
+
+     set tempstr "r_${tempdiststr}_${tempdepthstr}"
+     set templist [glob ${tempstr}_mxx]
+     if {[llength templist] == 0} {
+        send_error "No files match glob pattern ${tempstr}_mxx,\n"
+        send_error "quiting gfcombine for $sta\n"
+        close
+        wait
+        continue
+     }
+     exp_send -- "$tempstr\r"
+     expect "What is the output base filename?"
+     exp_send -- "s_$sta\r"
+     expect "Dislocation (1) or moment tensor (2) response?\r\n"
+     exp_send "2\r"
+     expect " Enter Moment tensor:\r\n mxx,mxy,mxz,myy,myz,mzz.\r\n"
+
+# store original moment tensor
+     foreach a {x y z} {
+        foreach b {x y z} {
+           set mtarrayorig(${a}$b) $mtarray(${a}$b)
+        }
+     }
+
+     mtrotate mtarray [expr $evtdistaz($sta,az)-$azimuth]
+
+#     pt2slipnormal [expr $taz-($evtdistaz($sta,az)-$azimuth)] $tpl [expr $paz-($evtdistaz($sta,az)-$azimuth)] $ppl nuvector uvector
+#     slipnormal2mij mtarray nuvector uvector
+#     slipnormal2sds strika dipa slipa nuvector uvector
+#     slipnormal2sds strikb dipb slipb uvector nuvector
+
+     exp_send -- "$mtarray(xx) $mtarray(xy) $mtarray(xz) $mtarray(yy) $mtarray(yz) $mtarray(zz)\r"
+
+# reset mtarray to its unrotated value
+     foreach a {x y z} {
+        foreach b {x y z} {
+           set mtarray(${a}$b) $mtarrayorig(${a}$b)
+           unset mtarrayorig(${a}$b)
+        }
+     }
+
+     expect "Enter the station azimuth (in degrees).\r\n"
+     exp_send -- "$evtdistaz($sta,az)\r"
+     expect "Enter seismogram scale factor.\r\n"
+     exp_send -- "[expr $moment/1e+15]\r"
+     expect {
+        "What wave types (1) P-SV, (2) SH, (3) ALL?" {
+           exp_send -- "3\r"
+           expect eof
+        }
+        eof {}
+     }
+     wait
+   }
+   if {$gfcombinecleanup == 1} {
+     set runmessage "Clean Up."
+     set templist [glob {[rtz]_*_*_m[xyz][xyz]}]
+     eval exec rm [join $templist]
+   }
+   set runmessage "Idle."
+   unset tempstr 
+   unset templist
+   unset tempdiststr
+   unset tempdepthstr
+  }
+}
+
+#
+proc MMarkTime {} {
+global stalist sourcedepth evtdistaz modelfilename
+global runmessage
+global typedistance
+global tsynthyn
+global flatsourcedepth flatreceiverdepth
+
+ if {$typedistance == "irregArray" && $tsynthyn == 1} {
+  set modelfilenametail [file tail $modelfilename]
+  if {![file exists $modelfilenametail.flat]} {
+   send_user "File $modelfilenametail.flat doesn't exist.\n"
+   send_user "Using $modelfilenametail.grad\n"
+   set mmarktime_modelfile "$modelfilenametail.grad"
+  } else {
+   set mmarktime_modelfile "$modelfilenametail.flat"
+  }
+
+  if {[file exists $mmarktime_modelfile]} {
+   foreach sta $stalist {
+     set runmessage "mmarktime for $sta"
+     update idletasks
+     if {$flatsourcedepth} {
+       set temp_sourcedepth $sourcedepth
+       set sourcedepth [expr 6371.0 * log(6371.0 / (6371.0 - $sourcedepth))]
+     }
+     if {$sourcedepth == int($sourcedepth)} {
+        set tempdepthstr [format "%4.0f" $sourcedepth]
+     } elseif {(0.0 <= $sourcedepth)&&($sourcedepth<10.0)} {
+        set tempdepthstr [format "%3.1f" $sourcedepth]
+     } elseif {(10.0 <= $sourcedepth)&&($sourcedepth<100.0)} {
+        set tempdepthstr [format "%4.1f" $sourcedepth]
+     } elseif {$sourcedepth>=100.0} {
+        set tempdepthstr [format "%5.1f" $sourcedepth]
+     }
+     if {$flatsourcedepth} {
+        set sourcedepth $temp_sourcedepth
+        unset temp_sourcedepth
+     }
+     regsub -all " " $tempdepthstr 0 tempdepthstr
+     if {$evtdistaz($sta,dist) == int($evtdistaz($sta,dist))} {
+        set tempdiststr [format "%4.0f" $evtdistaz($sta,dist)]
+     } elseif {(10.0<=$evtdistaz($sta,dist))&&($evtdistaz($sta,dist)<100.0)} {
+        set tempdiststr [format "%4.1f" $evtdistaz($sta,dist)]
+     } elseif {$evtdistaz($sta,dist)>=100.0} {
+        set tempdiststr [format "%5.1f" $evtdistaz($sta,dist)]
+     }
+     regsub -all " " $tempdiststr 0 tempdiststr
+     if {![file exists "r_${tempdiststr}_${tempdepthstr}_mxx"]} {
+        send_user "File r_${tempdiststr}_${tempdepthstr}_mxx doesn't exist.\n"
+     } else {
+        exec mmarktime $mmarktime_modelfile "${tempdiststr}_${tempdepthstr}"
+     }
+   }
+   set runmessage "Idle."
+  }
+ }
+}
+
+#
+proc Tsynth {} {
+global tsynthredvel tsynthoffset tsynthdorv tsynthsori
+global runmessage
+global zpositiveup
+
+   if {$zpositiveup} {
+      set zopt "-zu"
+   } else {
+      set zopt "-zd"
+   }
+   set runmessage "spec2zrt $zopt $tsynthdorv $tsynthsori"
+   update idletasks
+   set pid [spawn spec2zrt $zopt $tsynthdorv $tsynthsori]
+   puts "spawn in Tsynth $pid"
+   expect "enter reducing velocity, tdly: \r\n"
+   exp_send -- "$tsynthredvel $tsynthoffset\r"
+   expect eof
+   wait
+   set runmessage "Done."
+}
+
+proc SendModel {modelfilenametail layername numlayers} {
+#
+#    sends a model file to the remote machine
+#
+   upvar $layername layer
+#
+#    change so not using so many globals soon!
+   global spawn_id
+   global codetype
+   global remoteprompt
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global numrdist rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global plowcorner phighcorner slowcorner shighcorner
+#
+   if {[string compare $codetype "diffkennett"] == 0} {
+      send_user "Differentials not parallel yet!"
+      return 1
+   }
+   exp_send "cat > $modelfilenametail\r"
+   exp_send -- "$numlayers\r"
+   for {set i 1} {$i <= $numlayers} {incr i} {
+      exp_send -- "$layer($i,thickness) "
+      exp_send -- "$layer($i,vp) "
+      exp_send -- "$layer($i,vs) "
+      exp_send -- "$layer($i,rho) "
+      exp_send -- "$layer($i,qp) "
+      exp_send -- "$layer($i,qs) "
+      exp_send -- "$plowcorner "
+      exp_send -- "$phighcorner "
+      exp_send -- "$slowcorner "
+      exp_send -- "$shighcorner\r"
+   }
+   exp_send -- "$lowcut $lowpass $highpass $highcut $controlfac\r"
+   exp_send -- "$fmin $fmax $fnyquist $numtimepoints\r"
+   exp_send -- "$distance $azimuth\r"
+   if {$distance == 0} {
+      exp_send -- "$rmindist $rdeltadist $numrdist\r"
+   } elseif {$distance < 0} {
+      exp_send -- "$numrdist\r"
+      exp_send -- "$rdistances\r"
+   }
+# This is apparently not supported by mgenkennett yet
+#   if {[string compare $codetype "mgenkennett"] == 0} {
+#      exp_send -- "$numsources\r"
+#   }
+   exp_send -- "$sourcedepth\r"
+   exp_send -- "$receiverdepth\r"
+   if {[string compare $codetype "mgenkennett"] == 0} {
+      exp_send -- "$mtarray(xx) $mtarray(xy) $mtarray(xz) $mtarray(yy) $mtarray(yz) $mtarray(zz)\r"
+   }
+   SendCommand "\004"
+}
+
+proc PutsModel {modelfilenametail layername numlayers} {
+#
+#    sends a model file to the remote machine
+#
+   upvar $layername layer
+#
+#    change so not using so many globals soon!
+   global codetype
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global numrdist rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global plowcorner phighcorner slowcorner shighcorner
+   global diffparam
+#
+   set f [open $modelfilenametail w]
+   puts $f "$numlayers"
+   for {set i 1} {$i <= $numlayers} {incr i} {
+      puts -nonewline $f "$layer($i,thickness) "
+      puts -nonewline $f "$layer($i,vp) "
+      puts -nonewline $f "$layer($i,vs) "
+      puts -nonewline $f "$layer($i,rho) "
+      puts -nonewline $f "$layer($i,qp) "
+      puts -nonewline $f "$layer($i,qs) "
+      puts -nonewline $f "$plowcorner "
+      puts -nonewline $f "$phighcorner "
+      puts -nonewline $f "$slowcorner "
+      puts $f "$shighcorner"
+   }
+   puts $f "$lowcut $lowpass $highpass $highcut $controlfac"
+   puts $f "$fmin $fmax $fnyquist $numtimepoints"
+   puts $f "$distance $azimuth"
+   if {$distance == 0} {
+      puts $f "$rmindist $rdeltadist $numrdist"
+   } elseif {$distance < 0} {
+      puts $f "$numrdist"
+      puts $f "$rdistances"
+   }
+# This is apparently not supported by mgenkennett yet
+#   if {[string compare $codetype "mgenkennett"] == 0} {
+#      puts $f "$numsources"
+#   }
+#
+#   This is because of compile with MULTIDEP
+   puts $f "$numsources"
+#
+   puts $f "$sourcedepth"
+   puts $f "$receiverdepth"
+   if {[string compare $codetype "mgenkennett"] == 0 || [string compare $codetype "diffkennett"] == 0} {
+      puts $f "$mtarray(xx) $mtarray(xy) $mtarray(xz) $mtarray(yy) $mtarray(yz) $mtarray(zz)"
+   }
+   if {[string compare $codetype "diffkennett"] == 0} {
+      puts $f "$diffparam"
+   }
+   close $f
+}
+ 
+proc doeft {layername numlayersname flayername fnumlayersname flattenparam} {
+   upvar $layername layer  
+   upvar $flayername flayer  
+   upvar $numlayersname numlayers  
+   upvar $fnumlayersname fnumlayers  
+#
+#    do eft 
+   set fnumlayers $numlayers
+   if [info exists flayer] {unset flayer}
+   foreach varname [array names layer] {
+      set flayer($varname) $layer($varname)
+   }
+   unset varname
+   flatten layer $numlayers flayer fnumlayers $flattenparam
+}
+
+proc dogradients {layername numlayersname glayername gnumlayersname } {
+   upvar $layername layer  
+   upvar $glayername glayer  
+   upvar $numlayersname numlayers  
+   upvar $gnumlayersname gnumlayers  
+   global prespoisson
+#
+#    do gradients if needed
+   set gnumlayers $numlayers
+   if [info exists glayer] {unset glayer}
+   foreach varname [array names layer] {
+      set glayer($varname) $layer($varname)
+   }
+   unset varname
+   for {set i [expr $numlayers-1]} {$i > 0} {incr i -1} {
+      if {[info exists layer($i,pgradient)] && [info exists layer($i,sgradient)]} {
+         if {$layer($i,thickness) > $layer($i,gradparam) && ($layer($i,pgradient) < 0.0 || $layer($i,pgradient) > 0.0 || $layer($i,sgradient) < 0.0 || $layer($i,sgradient) > 0.0)} {
+            if {$prespoisson&&$layer($i,vs)!=0.0} {
+               set vpvs [expr $layer($i,vp)/$layer($i,vs)]
+               gradient glayer $gnumlayers tempglayer gnumlayers $i \
+                     $layer($i,pgradient) [expr $layer($i,pgradient)/$vpvs] \
+                     $layer($i,gradparam)
+            } else {
+               gradient glayer $gnumlayers tempglayer gnumlayers $i \
+                     $layer($i,pgradient) $layer($i,sgradient) \
+                     $layer($i,gradparam)
+            }
+            unset glayer
+            foreach varname [array names tempglayer] {
+               set glayer($varname) $tempglayer($varname)
+            }
+            unset tempglayer
+         }
+      }
+   }
+}
+
+# Procedure:RunParagon
+proc RunParagon {} {
+   global spawn_id
+   global paragonspawn_id connected
+   global localprompt remoteprompt
+   global localmachinename remotemachinename 
+   global localdir remotedir
+   global localdirtail remotedirtail
+   global modelfilename modelfilenametail
+   global totalnodes maxwantednodes minwantednodes 
+   global codetype
+   global numlayers
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global numrdist rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global layer
+   global plowcorner phighcorner slowcorner shighcorner
+   global eftyn flattenparam gradientparam
+   global tsynthredvel tsynthoffset
+   global oktogoon
+   global runmessage
+   global maxruntime
+   global flatsourcedepth flatreceiverdepth
+   global percentdone
+#
+   if {!$connected} {
+     set timeout 60
+     set pid [spawn rsh "$remotemachinename"]
+     puts "spawn in RunParagon $pid"
+     expect {
+        -re "$remoteprompt" { 
+           set paragonspawn_id $spawn_id 
+           set connected 1
+        }
+	"Password:" {
+	   send_user "Remote Machine wants a password!"
+           send_user "Change your .rhosts on the remote machine so this "
+	   send_user "you can rsh without a password\n"
+           send_user "Enter Password:"
+           expect_user -re "(.*)\n"
+           set passwd $expect_out(1,string)
+           send_user "\n"
+           exp_send "$passwd\r"
+           set passwd ""
+           expect -re "$remoteprompt"
+           set paragonspawn_id $spawn_id 
+           set connected 1
+	}
+        timeout {send_user "Timeout, didn't connect to $remotemachinename\n"
+                 set runmessage "Idle."
+                 return 1
+        }
+     }
+     set timeout 60
+     set runmessage "Connected to $remotemachinename."
+   } else {
+      set spawn_id $paragonspawn_id
+   }
+   exp_send "ls -d $remotedir\r"
+   expect {
+      "ls -d $remotedir\r\n$remotedir not found\r\n" {
+         expect -re "$remoteprompt"
+         exp_send "mkdir $remotedir\r"
+         expect -re "$remoteprompt"}
+      "ls -d $remotedir\r\n$remotedir\r\n" {expect -re "$remoteprompt" }
+      timeout {send_user "Timeout looking for $remotedir\n logging out\n"
+               exp_send "logout\r"
+               set connected 0
+               set runmessage "Idle."
+               return 1
+      }
+   }
+   SendCommand "cd $remotedir\r"
+# use $localdirtail_yyjjjhhmmss as remote subdirectory to avoid conflicts
+   set datetime [exec date +%y%j%H%M%S]
+   set reallocaldirtail $localdirtail
+   set localdirtail "${localdirtail}_$datetime"
+   unset datetime
+   exp_send "ls -d $localdirtail\r"
+   expect {
+      "ls -d $localdirtail\r\n$localdirtail not found\r\n" {
+         expect -re "$remoteprompt"
+         exp_send "mkdir $localdirtail\r"
+         expect -re "$remoteprompt"
+         SendCommand "cd $localdirtail\r"
+      }
+      "ls -d $localdirtail\r\n$localdirtail\r\n" {
+         expect -re "$remoteprompt"
+         send_error "$localdirtail exists on $remotemachinename\n"
+         SendCommand "cd $localdirtail\r"
+         SendCommand "rm mspec output $codetype.pg $modelfilenametail\r"
+         SendCommand "rm $modelfilenametail.grad $modelfilenametail.flat\r"
+         SendCommand "rm $modelfilenametail.orig tempmodel\r"
+      }
+      timeout {send_user "Timeout looking for $localdirtail\n logging out\n"
+               exp_send "logout\r"
+               set connected 0
+               set runmessage "Idle."
+               return 1
+      }
+   }
+   exp_send "script output\r"
+   expect {
+      "Script started, file is" {}
+      timeout {send_user "Error script output timed out\n"}
+   }
+   SendCommand "source ~/.login\r"
+   SendCommand "pwd\r"
+   SendCommand "ls\r"
+   set runmessage "Creating model file."
+   SendModel $modelfilenametail layer $numlayers
+   SendCommand "cp $modelfilenametail $modelfilenametail.orig\r"
+#
+#    do gradients if needed (pass by name not value so no $)
+   dogradients layer numlayers glayer gnumlayers
+#
+   SendModel $modelfilenametail.grad glayer $gnumlayers
+   SendCommand "rm $modelfilenametail\r"
+   SendCommand "cp $modelfilenametail.grad $modelfilenametail\r"
+#
+#    Earth Flattening Transform
+   if {$eftyn} {
+#      do eft if needed (pass by name not value so no $)
+      doeft glayer gnumlayers flayer fnumlayers $flattenparam
+#
+# We must also change the depth of the source and receiver to an earth flattened
+# depth if flatsourcedepth or flatreceiverdepth is true. Do this temporarily.
+      if {$flatsourcedepth} {
+        set temp_sourcedepth $sourcedepth
+        set sourcedepth [expr 6371.0 * log(6371.0 / (6371.0 - $sourcedepth))]
+      }
+      if {$flatreceiverdepth} {
+       set temp_receiverdepth $receiverdepth
+       set receiverdepth [expr 6371.0 * log(6371.0 / (6371.0 - $receiverdepth))]
+      }
+      SendModel $modelfilenametail.flat flayer $fnumlayers
+      if {$flatsourcedepth} {
+         set sourcedepth $temp_sourcedepth
+         unset temp_sourcedepth
+      }
+      if {$flatreceiverdepth} {
+         set receiverdepth $temp_receiverdepth
+         unset temp_receiverdepth
+      }
+      unset flayer fnumlayers
+      SendCommand "rm $modelfilenametail\r"
+      SendCommand "cp $modelfilenametail.flat $modelfilenametail\r"
+   }
+   unset glayer gnumlayers
+#
+   set retry 1
+   while {$retry == 1} {
+   exp_send "lspart -r\r"
+   set freenodes $totalnodes
+   expect {
+      ".compute:\r\n" {
+        while {1} {
+           expect {
+             -re "^\.compute\.\[^\r]*\r\n" {
+                expect -re "$remoteprompt"
+                break
+             }
+             -re "\[ ]+\[^ ]+\[ ]+\[^ ]+\[ ]+\[0-9]+\[ ]+(\[0-9]+)\[^\r]*\r\n" {
+                set freenodes [expr $freenodes - $expect_out(1,string)]
+             }
+             -re "$remoteprompt" {
+                break
+             }
+           }
+        }
+      }
+      -re "$remoteprompt" {}
+   }
+   set nodes $minwantednodes
+set runpics {}
+   if {$nodes > $freenodes} {
+      send_error "Not enough nodes available, $freenodes\n"
+# TEMPORARILY USE PICS PARTITION
+#      set runmessage "Wait 5 min."
+#      sleep [expr 5*60]
+#send_error "done sleeping\n"
+#      continue
+set freenodes $minwantednodes
+set runpics ".pics"
+   }
+   while {(2+$nodes <= $freenodes)&&(2+$nodes <= $maxwantednodes)} {
+      set nodes [expr 2+$nodes]
+   }
+   set runmessage "Running on $nodes nodes."
+   SendCommand "rm $codetype.pg\r"
+   exp_send "cat > $codetype.pg\r"
+   exp_send "local [expr $nodes - 1] /home/crotwell/bin/$codetype\r"
+   SendCommand "\004"
+# TEMPORARILY USE PICS PARTITION
+   exp_send "time pexec$runpics $codetype -sz $nodes\r"
+   set timeout 60
+   expect {
+      "input filename:" {
+         set retry 0
+         exp_send -- "$modelfilenametail\r" }
+      "Request for too many nodes" {
+         send_error "Request for too many nodes\n"
+         expect -re $remoteprompt
+         set runmessage "Request too large, wait 5 min."
+         sleep [expr 5*60]
+         set retry 1}
+      "mkpart: Exceeds partition resources" {
+         send_error "Request for too many nodes, Exceeds partition resources\n"
+         set runmessage "Num nodes exceeds partition, wait 5 min."
+         expect -re $remoteprompt
+         sleep [expr 5*60]
+         set retry 1}
+      timeout {
+         send_error "Timeout calling pexec $codetype\n"
+         exp_send "\003"
+         SendCommand "exit\r"
+         exp_send "logout\r"
+         set connected 0
+         set runmessage "Idle."
+         return 1 }
+   }
+   }
+   set timeout $maxruntime
+   set temploopvar 1
+   while {$temploopvar} {
+     expect {
+        "Error" {
+          set runmessage "Error!"
+          set temploopvar 0
+          send_user "Error running $codetype\n"
+          send_user "Stopping without removing anything\n"
+          exp_send "exit\r"
+          exp_send "logout\r"
+          set connected 0
+          return 1
+        }
+        -re "FORTRAN STOP\r\n" {
+          set timeout 60
+          set temploopvar 0
+          UpdateClock 1.0
+          expect -re "$remoteprompt"
+        }
+        timeout { 
+          send_user "Run taking over 4 hours, killing it\n"
+          set temploopvar 0
+          exp_send "\003"
+          SendCommand "exit\r"
+          exp_send "logout\r"
+          set runmessage "Idle."
+          set connected 0
+          return 1
+        }
+        -re " slowness\[ ]+(\[0-9]+)\[ ]+(\[0-9]+)\[ ]+(\[0-9]+)" {
+          set percentdone [expr 1.0* \
+              ($expect_out(1,string)-$expect_out(2,string)+1)/ \
+              ($expect_out(3,string)-$expect_out(2,string)+1)]
+          UpdateClock $percentdone
+        }
+     }
+   }
+   unset temploopvar
+   SendCommand "mv $modelfilenametail.orig $modelfilenametail \r"
+   exp_send "exit\r"
+   set timeout 60
+   expect -re "Script done, file is output\[^\r]*\r\n$remoteprompt"
+   SendCommand "cd ..\r"
+   if {[string index $localdir 0]!={/}&&[string index $localdir 0]!={~}} {
+     set localdir "[pwd]/$localdir"
+   }
+   set runmessage "rcp directory."
+#
+#    if the localdir already exists we want to put the files into it
+#    not the directory else it is easiest just to copy the whole directory
+#
+   if [file isdirectory $localdir] {
+      exp_send "rcp $localdirtail/* $localmachinename:$localdir\r"
+   } else {
+      exp_send "rcp -r $localdirtail $localmachinename:$localdir\r"
+   }
+   set timeout 1200
+   expect {
+      -re "(P|p)ermission denied\r\n$remoteprompt" {
+         send_error "Permission denied for rcp\n"
+         set runmessage "Error in rcp."
+         SendCommand "cd\r"
+         return 1
+      }
+      -re "$remoteprompt" {}
+      timeout {send_error "Timedout after rcp\n"
+               set runmessage "Idle."
+               SendCommand "cd\r"
+               return 1
+      }
+   }
+   SendCommand "rm $localdirtail/mspec\r"
+   if {[string compare $codetype "mijfkkennett"] == 0} {
+      SendCommand "rm $localdirtail/fspec\r"
+   }
+   SendCommand "rm $localdirtail/$modelfilenametail\r"
+   SendCommand "rm $localdirtail/$modelfilenametail.flat\r"
+   SendCommand "rm $localdirtail/$modelfilenametail.grad\r"
+   SendCommand "rm $localdirtail/$modelfilenametail.orig\r"
+   SendCommand "rm $localdirtail/output\r"
+   SendCommand "rm $localdirtail/$codetype.pg\r"
+   SendCommand "rmdir $localdirtail\r"
+   set localdirtail $reallocaldirtail
+   unset reallocaldirtail
+   SendCommand "cd\r"
+#
+# no longer log out so we reuse the spawned rsh, we're recycling!
+#   exp_send "logout\r"
+#   expect eof
+#   wait
+#   send_user "Logged out of $remotemachinename\n"
+#   set runmessage "Logged out of $remotemachinename."
+#
+   cd $localdir
+   send_user "exec bincnvrt mspec mspec.out\n"
+   set runmessage "bincnvrt."
+   exec bincnvrt mspec mspec.out
+   send_user "rm mspec\n"
+   exec rm mspec
+   send_user "mv mspec.out mspec\n"
+   exec mv mspec.out mspec
+   if {[string compare $codetype "mijfkkennett"] == 0} {
+      exec bincnvrt fspec fspec.out
+      exec rm fspec
+      exec mv fspec.out fspec
+   }
+   return 0
+}
+
+
+# Procedure: RunLocal
+proc RunLocal {} {
+   global spawn_id
+   global localprompt remoteprompt
+   global localmachinename remotemachinename 
+   global localdir remotedir
+   global localdirtail remotedirtail
+   global modelfilename modelfilenametail
+   global totalnodes maxwantednodes 
+   global codetype
+   global numlayers
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global layer
+   global plowcorner phighcorner slowcorner shighcorner
+   global eftyn flattenparam gradientparam
+   global tsynthredvel tsynthoffset
+   global oktogoon
+   global runmessage
+   global flatsourcedepth flatreceiverdepth
+   global percentdone
+#
+   if [file exists $localdir] {
+   } else {
+      exec mkdir $localdir
+   }
+   cd $localdir
+   set olddir [pwd]
+   set runmessage "Creating model file."
+   PutsModel $modelfilenametail layer $numlayers
+   exec cp $modelfilenametail $modelfilenametail.orig
+#
+#    do gradients if needed (pass by name not value so no $)
+   dogradients layer numlayers glayer gnumlayers
+#
+   PutsModel $modelfilenametail.grad glayer $gnumlayers
+   exec cp $modelfilenametail.grad $modelfilenametail
+#
+#    Earth Flattening Transform
+   if {$eftyn} {
+#      do eft if needed (pass by name not value so no $)
+      doeft glayer gnumlayers flayer fnumlayers $flattenparam
+#
+# We must also change the depth of the source and receiver to an earth flattened
+# depth if flatsourcedepth or flatreceiverdepth is true. Do this temporarily.
+      if {$flatsourcedepth} {
+        set temp_sourcedepth $sourcedepth
+        set sourcedepth [expr 6371.0 * log(6371.0 / (6371.0 - $sourcedepth))]
+      }
+      if {$flatreceiverdepth} {
+       set temp_receiverdepth $receiverdepth
+       set receiverdepth [expr 6371.0 * log(6371.0 / (6371.0 - $receiverdepth))]
+      }
+      PutsModel $modelfilenametail.flat flayer $fnumlayers
+      if {$flatsourcedepth} {
+         set sourcedepth $temp_sourcedepth
+         unset temp_sourcedepth
+      }
+      if {$flatreceiverdepth} {
+         set receiverdepth $temp_receiverdepth
+         unset temp_receiverdepth
+      }
+      unset flayer fnumlayers
+      exec cp $modelfilenametail.flat $modelfilenametail
+   }
+   unset glayer gnumlayers 
+#
+   set runmessage "Running locally."
+   set pid [spawn time $codetype]
+   puts "spawn in RunLocal $pid"
+   set timeout 60
+   expect {
+      "input filename:" {
+         exp_send -- "$modelfilenametail\r" }
+      timeout {
+         send_error "Timeout calling time $codetype\n"
+         set runmessage "Idle."
+         return 1 }
+   }
+   set timeout -1
+   set temploopvar 1
+   while {$temploopvar} {
+     expect {
+        "Error" {
+          set temploopvar 0
+          set runmessage "Error!"
+          send_user "Error running $codetype\n"
+          send_user "Stopping without removing anything\n"
+          return 1
+        }
+        -re " slowness\[ ]+(\[0-9]+) from\[ ]+(\[0-9]+) to\[ ]+(\[0-9]+)" {
+           set percentdone [expr 1.0* \
+              ($expect_out(1,string)-$expect_out(2,string)+1)/ \
+              ($expect_out(3,string)-$expect_out(2,string)+1)]
+           UpdateClock $percentdone
+        }
+        "FORTRAN STOP" {
+          UpdateClock 1.0
+	  expect eof
+          set temploopvar 0
+        }
+        eof {
+          UpdateClock 1.0
+          set temploopvar 0
+        }
+     }
+   }
+   unset temploopvar
+   wait
+   set timeout 10
+   exec mv $modelfilenametail.orig $modelfilenametail
+   return 0
+}
+
+# Procedure: RunLocalP4
+proc RunLocalP4 {} {
+   global spawn_id
+   global localprompt remoteprompt
+   global localmachinename remotemachinename 
+   global localdir remotedir
+   global localdirtail remotedirtail
+   global modelfilename modelfilenametail
+   global codetype
+   global localp4machines
+   global numlayers
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global layer
+   global plowcorner phighcorner slowcorner shighcorner
+   global eftyn flattenparam gradientparam
+   global tsynthredvel tsynthoffset
+   global oktogoon
+   global runmessage
+   global flatsourcedepth flatreceiverdepth
+   global percentdone
+#
+   if [file exists $localdir] {
+   } else {
+      exec mkdir $localdir
+   }
+   cd $localdir
+   set olddir [pwd]
+   set runmessage "Creating model file."
+   PutsModel $modelfilenametail layer $numlayers
+   exec cp $modelfilenametail $modelfilenametail.orig
+#
+#    do gradients if needed (pass by name not value so no $)
+   dogradients layer numlayers glayer gnumlayers
+#
+   PutsModel $modelfilenametail.grad glayer $gnumlayers
+   exec cp $modelfilenametail.grad $modelfilenametail
+#
+#    Earth Flattening Transform
+   if {$eftyn} {
+#      do eft if needed (pass by name not value so no $)
+      doeft glayer gnumlayers flayer fnumlayers $flattenparam
+#
+# We must also change the depth of the source and receiver to an earth flattened
+# depth if flatsourcedepth or flatreceiverdepth is true. Do this temporarily.
+      if {$flatsourcedepth} {
+        set temp_sourcedepth $sourcedepth
+        set sourcedepth [expr 6371.0 * log(6371.0 / (6371.0 - $sourcedepth))]
+      }
+      if {$flatreceiverdepth} {
+       set temp_receiverdepth $receiverdepth
+       set receiverdepth [expr 6371.0 * log(6371.0 / (6371.0 - $receiverdepth))]
+      }
+      PutsModel $modelfilenametail.flat flayer $fnumlayers
+      if {$flatsourcedepth} {
+         set sourcedepth $temp_sourcedepth
+         unset temp_sourcedepth
+      }
+      if {$flatreceiverdepth} {
+         set receiverdepth $temp_receiverdepth
+         unset temp_receiverdepth
+      }
+      unset flayer fnumlayers
+      exec cp $modelfilenametail.flat $modelfilenametail
+   }
+   unset glayer gnumlayers 
+#
+# Set up the .pg file for the P4 library
+   set f [open ${codetype}_p4.pg w]
+   puts $f "local 0 ${codetype}_p4"
+   foreach mach $localp4machines {
+      puts $f "$mach 1 ${codetype}_p4"
+   }
+   close $f
+   if [info exists mach] { unset mach }
+   unset f
+   
+#
+   set runmessage "Running locally P4."
+   set pid [spawn time "${codetype}_p4"]
+   puts "spawn in RunLocalP4 $pid"
+   set timeout 60
+   expect {
+      "input filename:" {
+         exp_send -- "$modelfilenametail\r" }
+      timeout {
+         send_error "Timeout calling time ${codetype}_p4\n"
+         set runmessage "Idle."
+         return 1 }
+   }
+   set timeout -1
+   set temploopvar 1
+   while {$temploopvar} {
+     expect {
+        "Error" {
+          set temploopvar 0
+          set runmessage "Error!"
+          send_user "Error running ${codetype}_p4\n"
+          send_user "Stopping without removing anything\n"
+          return 1
+        }
+        -re " slowness\[ ]+(\[0-9]+) from\[ ]+(\[0-9]+) to\[ ]+(\[0-9]+)" {
+           set percentdone [expr 1.0* \
+              ($expect_out(1,string)-$expect_out(2,string)+1)/ \
+              ($expect_out(3,string)-$expect_out(2,string)+1)]
+           UpdateClock $percentdone
+        }
+        eof {
+          UpdateClock 1.0
+          set temploopvar 0
+        }
+     }
+   }
+   unset temploopvar
+   wait
+   set timeout 10
+   exec mv $modelfilenametail.orig $modelfilenametail
+   return 0
+}
+   
+# Procedure: RunModel
+proc RunModel {} {
+   global spawn_id
+   global localprompt remoteprompt
+   global localmachinename remotemachinename 
+   global localdir remotedir
+   global localdirtail remotedirtail
+   global modelfilename modelfilenametail
+   global totalnodes maxwantednodes 
+   global codetype
+   global runloc
+   global numlayers
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global paz ppl taz tpl 
+   global nuvector uvector 
+   global strikea dipa slipa
+   global strikeb dipb slipb
+   global layer
+   global plowcorner phighcorner slowcorner shighcorner
+   global eftyn flattenparam gradientparam
+   global tsynthredvel tsynthoffset
+   global oktogoon
+   global runmessage
+   global tsynthyn gfcombineyn marktimeyn gfconvertyn
+   global mo
+   global stalist evtdistaz arraystanames
+   global runinprogress
+#
+#  first we check to make sure that there isn't a run in progress. The event
+#  loop for tk is active whenever an expect statement is waiting so it is
+#  possible to attemp to start a run even though one is in progress
+#
+   if {$runinprogress != 0} {
+      ShowWindow.alert "A Run is in Progress, Wait Until it has Finished"
+      return 1
+   } else {
+      set runinprogress 1
+   }
+   set currentdir [pwd]
+   set runmessage "Checking for directories"
+   set modelfilenametail [file tail $modelfilename]
+   if {[file exists $localdir]} {
+      set oktogoon 0
+      while {$oktogoon != 1} {
+         ShowWindow.alert_direxists "$localdir"
+         tkwait visibility .alert_direxists
+         grab set .alert_direxists
+         tkwait window .alert_direxists
+         if {$oktogoon == "cancel"} {
+            set runmessage "Idle."
+            set runinprogress 0
+            return 1
+         } elseif {$oktogoon == "overwrite"} {
+            set oktogoon 1
+            if [file isfile $localdir] {
+               catch {rm $localdir}
+            } else {
+               set tempdir [pwd]
+               cd $localdir
+               catch {exec rm mspec output $codetype.pg}
+               catch {exec rm $modelfilenametail $modelfilenametail.orig }
+               catch {exec rm $modelfilenametail.grad $modelfilenametail.flat }
+               catch {exec rm $modelfilenametail.saveall \
+                      $modelfilenametail.savelayer}
+               catch {eval exec rm [glob "\[rtz]_????_????_m\[xyz]\[xyz]"]}
+               foreach sta $arraystanames {
+                  catch {eval exec rm [glob "s_${sta}.[rtz]"]}
+               }
+               cd $tempdir
+               unset tempdir
+            }
+         } elseif {$oktogoon == "rename"} {
+            set templocaldir [FSBox "Select local dir:"]
+            if {$templocaldir == ""} {
+               unset templocaldir
+               unset oktogoon
+               set runmessage "Idle."
+               set runinprogress 0
+               return 1
+            }
+            set localdir $templocaldir
+            unset templocaldir
+            if {[file exists $localdir]} {
+               set oktogoon 0
+            } else {set oktogoon 1}
+         }
+      }
+   }
+   set localdirtail [file tail $localdir]
+   cd [file dirname $localdir]
+
+   if {$runloc == "paragon"} {
+      set runmessage "Paragon Run"
+      if {[RunParagon] != 0} { 
+         set runinprogress 0
+         return 1}
+   } elseif {$runloc == "localp4"} {
+      set runmessage "Local P4 Run"
+      if {[RunLocalP4] != 0} { 
+         set runinprogress 0
+         return 1}
+   } else {
+      set runmessage "Local Run"
+      if {[RunLocal] != 0} { 
+         set runinprogress 0
+         return 1}
+   }
+# Note RunLocal and RunParagon both cd to the directory and bincnvrt the
+# mspec file.
+
+# save values of all variables for easy repeatability
+   set runmessage "Saving"
+   SaveAllToFile {model.saveall}
+   SaveLayerToFile {model.savelayer}
+
+   if {$tsynthyn} {
+      Tsynth
+   }
+#
+   if {$marktimeyn} {
+      MMarkTime
+   }
+   if {$gfcombineyn} {
+      GFCombine
+   }
+   if {$gfconvertyn} {
+      GFConvert
+   }
+   cd $currentdir
+   unset localdirtail
+   set runmessage "Done."
+   send_error "\n\nDone!\n"
+   set runinprogress 0
+   .frame_clock.clock delete all
+#
+}

@@ -1,0 +1,75 @@
+# procedure to show window .alert_direxists
+proc ShowWindow.alert_direxists {{themessage "????"}} {# xf ignore me 7
+  global oktogoon
+
+  # build widget .alert_direxists
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .alert_direxists"
+  } {
+    catch "destroy .alert_direxists"
+  }
+  toplevel .alert_direxists  \
+    -borderwidth {2} \
+    -relief {raised}
+
+  # Window manager configurations
+  global tkVersion
+  wm title .alert_direxists {Alert!}
+
+
+  # build widget .alert_direxists.message
+  message .alert_direxists.message \
+    -aspect {1500} \
+    -justify {center} \
+    -padx {5} \
+    -pady {2} \
+    -relief {raised} \
+    -text "$themessage exists. What should I do? "
+
+  # build widget .alert_direxists.button_overwrite
+  button .alert_direxists.button_overwrite \
+    -command {global oktogoon
+              set oktogoon "overwrite"
+              DestroyWindow.alert_direxists} \
+    -text {Overwrite}
+
+  # build widget .alert_direxists.button_rename
+  button .alert_direxists.button_rename \
+    -command {global oktogoon
+              set oktogoon "rename"
+              DestroyWindow.alert_direxists } \
+    -text {Select Again}
+
+  # build widget .alert_direxists.button_cancel
+  button .alert_direxists.button_cancel \
+    -command {global oktogoon
+              set oktogoon "cancel"
+              DestroyWindow.alert_direxists } \
+    -text {Cancel}
+
+  # pack widget .alert_direxists
+  pack append .alert_direxists \
+    .alert_direxists.message {top frame center expand fillx} \
+    .alert_direxists.button_overwrite {left frame center expand fillx} \
+    .alert_direxists.button_rename {left frame center expand fillx} \
+    .alert_direxists.button_cancel {left frame center expand fillx}
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree .alert_direxists"
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+proc DestroyWindow.alert_direxists {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .alert_direxists]" != ""} {
+      global xfShowWindow.alert_direxists
+      set xfShowWindow.alert_direxists 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .alert_direxists; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .alert_direxists"
+    update
+  }
+}

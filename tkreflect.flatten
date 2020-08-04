@@ -1,0 +1,76 @@
+#
+# Performs an earth flattening transformation on a model
+#
+# Philip Crotwell, Aug 1995, Perl version
+#  based on nawk scripts from George Randall
+#
+#  tcl version Feb. 1996
+#
+proc flatten {layervarname numlayers flattenvarname flatnumlayername nlfactor} {
+   upvar $layervarname layer
+   upvar $flattenvarname flayer
+   upvar $flatnumlayername fnumlayers
+#
+# nlfactor is approximate layer thickness for the EFT
+#
+# Reference radius
+   set R 6371
+#
+# layerlistboxes   the list of variables that are defined for each layer
+# generate it based on the variables defined for the first layer
+   foreach l [array names layer] {
+     if [string match "1,*" $l] {
+      regsub "1," $l "" ll
+      lappend layerlistboxes $ll
+     }
+   }
+   unset l ll
+# 
+# l is aribtrary constant for EFT, rho_f = rho_s (r/R)^(l+2)
+# set l -1 makes the impedence contrast the same for spherical and flattened
+   set l -1
+
+#
+# Revise Model
+#
+   set nnlyr $numlayers
+   set ii 1
+   set bots 0.0
+   set fnumlayers 0
+#
+   for {set i 1} {$i <= $numlayers} {incr i} {
+      set tops $bots
+      set bots [expr $bots + $layer($i,thickness)]
+      set topf [expr $R * log($R / ($R - $tops))]
+      set botf [expr $R * log($R / ($R - $bots))]
+      set thickf [expr $botf - $topf]
+      if {$thickf <= $nlfactor} {
+         set nnl 1
+      } else {
+         set nnl [expr round(ceil($thickf/$nlfactor))]
+      }
+      if {$nnl < 1} {
+         set nnl 1
+      }
+      set fnumlayers [expr $fnumlayers + $nnl]
+      set ddz [expr $thickf / $nnl]
+      for {set ifl 0} {$ifl < $nnl} {incr ifl} {
+         set flayer($ii,thickness) $ddz
+         set layertopf [expr $topf + $ifl*$ddz]
+         set layerbotf [expr $layertopf + $ddz]
+         set flayer($ii,vp) \
+            [expr $layer($i,vp)*exp(($layertopf+$layerbotf)/(2*$R))]
+         set flayer($ii,vs) \
+            [expr $layer($i,vs)*exp(($layertopf+$layerbotf)/(2*$R))]
+         set flayer($ii,rho) \
+            [expr $layer($i,rho)/pow(exp(($layertopf+$layerbotf)/(2*$R)),$l+2)]
+           foreach lbox $layerlistboxes {
+             if {$lbox != "thickness"&& $lbox != "vp" && $lbox != "vp" && $lbox != "vs" && $lbox != "rho" && $lbox != "gradient"} {
+                set flayer($ii,$lbox)  $layer($i,$lbox)
+             }
+           }
+           set flayer($ii,gradient) .000
+         incr ii
+      }
+   }
+}

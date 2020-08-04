@@ -1,0 +1,99 @@
+#
+# Replaces a layer with many layers approximationg a gradient in a model
+#
+# Gradient for Rho is .32 * gradient for P, this is probabibly close enough
+# for most applications but...
+#
+# Philip Crotwell, Aug 1995, Perl version
+#  based on nawk scripts from George Randall
+#
+#  tcl version March 1996
+#
+proc gradient {layervarname numlayers gradvarname gradnumlayername \
+               gradlayer pgrad sgrad nlfactor} {
+   upvar $layervarname layer
+   upvar $gradvarname glayer
+   upvar $gradnumlayername gnumlayers
+#
+# layervarname     name of the variable holding the layers
+# numlayers        the number of layers
+# gradvarname      name of the variable to return the new layers in
+# gradnumlayername name of the variable to return the new number of layers in
+# gradlayer        layer to apply the gradient in
+# pgrad            Vp gradient to apply
+# sgrad            Vs gradient to apply
+# nlfactor         approximate layer thickness for the gradient
+#
+# layerlistboxes   the list of variables that are defined for each layer
+# generate it based on the variables defined for the first layer
+   foreach l [array names layer] {
+     if [string match "1,*" $l] {
+      regsub "1," $l "" ll
+      lappend layerlistboxes $ll
+     }
+   }
+   unset l ll
+#
+# Revise Model
+#
+   set nnlyr $numlayers
+   set ii 1
+   set gnumlayers 0
+#
+   for {set i 1} {$i <= $numlayers} {incr i} {
+      if {$i==$gradlayer} {
+#         how many new layers do we need
+        set nnl [expr round(ceil($layer($i,thickness)/$nlfactor))]
+        if {$nnl <= 1} {
+#
+#   here the layer thickness is already smaller than nlfactor so we shouldn't
+#   do anything, just set glayer to be layer
+#
+           foreach index [array names layer] {
+              set glayer($index) $layer($index)
+           }
+           set gnumlayers $numlayers
+           return 0
+        }
+#puts "nnl $nnl"
+        set gnumlayers [expr $gnumlayers + $nnl]
+        set dz [expr $layer($i,thickness) / $nnl]
+        set dvp [expr $pgrad * $layer($i,thickness) / $nnl]
+        set dvs [expr $sgrad * $layer($i,thickness) / $nnl]
+# use emprical formula for rho so that rho gradient is .32 of p gradient
+        set drho [expr $pgrad * .32 * $layer($i,thickness) / $nnl]
+        for {set igl 0} {$igl < $nnl} {incr igl} {
+           set glayer($ii,thickness) $dz
+           set glayer($ii,vp) [expr $layer($i,vp) + $dvp * $igl]
+           set glayer($ii,vs) [expr $layer($i,vs) + $dvs * $igl]
+           set glayer($ii,rho) [expr $layer($i,rho) + $drho * $igl]
+# set all other layer parameters
+           foreach l $layerlistboxes {
+             if {$l != "thickness"&& $l != "vp" && $l != "vp" && $l != "vs" && $l != "rho" && $l != "gradient"} {
+                set glayer($ii,$l)  $layer($i,$l)
+             }
+           }
+           set glayer($ii,gradient) .000
+           incr ii
+        }
+      } else {
+         if {$i == $numlayers && [expr $i-1] == $gradlayer} {
+#  Set half space parameters equal to prvious layers parameters to avoid
+#  spurious reflections
+            incr gnumlayers
+            set glayer($ii,thickness) $layer($i,thickness)
+            foreach l $layerlistboxes {
+              if {$l != "thickness"} {
+                 set glayer($ii,$l)  $glayer([expr $ii-1],$l)
+              }
+            }
+         } else {
+            incr gnumlayers
+            foreach l $layerlistboxes {
+              set glayer($ii,$l)  $layer($i,$l)
+            }
+         }
+         incr ii
+      }
+   }
+}

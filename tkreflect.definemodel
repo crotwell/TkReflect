@@ -1,0 +1,823 @@
+#
+proc resetAverageProperties {average_top average_bot} {
+   global layer numlayers
+   global average_vp average_vs average_rho
+   global average_number average_depth average_poisson average_thickness
+   global poissonratio
+
+#     don't calculate average properties if check button not checked
+   global avepropyn
+   if {$avepropyn == 0} {return 0}
+
+   if {$average_bot > $numlayers} {set average_bot [expr $numlayers - 1]}
+   if {$average_top > $numlayers} {set average_top 0}
+   if {$average_top > $average_bot && $average_bot != -1} {
+      set temp $average_top
+      set average_top $average_bot
+      set average_bot $temp
+   }
+   set depth 0.0
+   if {$average_top == -1} {
+      set t 1
+   } else {
+      set t [expr $average_top + 1]
+   }
+   if {$average_bot == -1} {
+      set b $numlayers
+   } else {
+      set b [expr $average_bot + 1]
+   }
+   for {set i 1} {$i <= $b} {incr i} {
+      if {$i == $t} {set udepth $depth}
+      set depth [expr $depth + $layer($i,thickness)]
+      if {$i == $b} {set ldepth $depth}
+   }
+   dogradients layer numlayers glayer gnumlayers
+   set avelist [averageProperties "glayer" $gnumlayers $udepth $ldepth]
+   set average_vp [lindex $avelist 0]
+   set average_vs [lindex $avelist 1]
+   set average_rho [lindex $avelist 2]
+   if {$poissonratio} {
+     set average_poisson [expr (pow($average_vp,2)-2*pow($average_vs,2) )/( 2*pow($average_vp,2)-2*pow($average_vs,2))]
+   } else {
+     set average_poisson [expr $average_vp / $average_vs]
+   }
+   set average_number "$t to $b"
+   set average_depth "$udepth to $ldepth"
+   set average_thickness [expr $ldepth - $udepth]
+   
+}
+#
+proc resetDepthListBox {layername numlayers} {
+   upvar $layername layer
+#
+# layername     name of the variable holding the layers
+# numlayers     number of layers in the model
+#
+set tcl_precicsion 17
+# check if the widgets exists
+   if [winfo exists .defineModel.layerframe.depth.depth] {
+      set depth 0
+      .defineModel.layerframe.depth.depth delete 0 end
+      for {set i 1} {$i <= $numlayers} {incr i} {
+         .defineModel.layerframe.depth.depth insert end $depth
+         set depth [expr $depth + $layer($i,thickness)]
+      }
+   }
+}
+#
+proc resetSGradientListBox {layername numlayers} {
+   upvar $layername layer
+#
+# layername     name of the variable holding the layers
+# numlayers     number of layers in the model
+#
+# check if the widgets exists
+   if [winfo exists .defineModel.layerframe.sgradient.sgradient] {
+      .defineModel.layerframe.sgradient.sgradient delete 0 end
+      for {set i 1} {$i <= $numlayers} {incr i} {
+         .defineModel.layerframe.sgradient.sgradient insert end \
+             [expr $layer($i,pgradient)*$layer($i,vs)/$layer($i,vp)]
+      }
+   }
+}
+#
+#
+proc resetPoissonListBox {layername numlayers} {
+   global poissonratio
+   upvar $layername layer
+#
+# layername     name of the variable holding the layers
+# numlayers     number of layers in the model
+#
+# check if the widgets exists
+   if [winfo exists .defineModel.layerframe.poisson.poisson] {
+      .defineModel.layerframe.poisson.poisson delete 0 end
+      if {$poissonratio} {
+        for {set i 1} {$i <= $numlayers} {incr i} {
+         .defineModel.layerframe.poisson.poisson insert end \
+                [expr (pow($layer($i,vp),2)-2*pow($layer($i,vs),2) )/( 2*pow($layer($i,vp),2)-2*pow($layer($i,vs),2))]
+        }
+      } else {
+        for {set i 1} {$i <= $numlayers} {incr i} {
+         .defineModel.layerframe.poisson.poisson insert end \
+                [expr $layer($i,vp)/$layer($i,vs)]
+        }
+      }
+   }
+}
+#
+proc replaceListboxentry {widget item text} {
+#    just a little procedure to replace one entry in a listbox with new text
+#
+    if [winfo exists $widget] {
+     $widget delete $item
+     $widget insert $item $text
+    }
+}
+
+proc resetListBoxEntries {layername numlayers} {
+   upvar $layername layer
+   global layerlistboxes alllistboxes
+   global prespoisson
+   global average_top average_bot
+#
+# reload model listboxes with values in layer array
+#
+# layername     name of the variable holding the layers
+# numlayers     number of layers in the model
+#
+# check if the widgets exists, assume if one exists than all do
+   if [winfo exists .defineModel.layerframe.number.number] {
+     resetDepthListBox "layer" $numlayers
+     resetPoissonListBox "layer" $numlayers
+     resetAverageProperties $average_top $average_bot
+     foreach widget $layerlistboxes {
+        .defineModel.layerframe.$widget.$widget delete 0 end
+     }
+     .defineModel.layerframe.number.number delete 0 end
+     for {set i 1} {$i <= $numlayers} {incr i} {
+       .defineModel.layerframe.number.number insert end $i
+       foreach widget $layerlistboxes {
+        .defineModel.layerframe.$widget.$widget insert end $layer($i,$widget)
+       }
+     }
+     if {$prespoisson} {
+        resetSGradientListBox "layer" $numlayers
+     }
+   }
+}
+
+proc ShowWindow.defineModel {args} {
+global numlayers
+global layer
+global dispnumlayers
+global layerlistboxes alllistboxes
+global showgradtext showefttext
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .defineModel"
+  } {
+    catch "destroy .defineModel"
+  }
+  toplevel .defineModel  \
+    -relief {raised}
+
+  # Window manager configurations
+  global tkVersion
+  wm title .defineModel {Define Model Parameters}
+
+
+  frame .defineModel.frame0 \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .defineModel.frame0.label_numlayers \
+    -text {Number of Layers:}
+
+  entry .defineModel.frame0.entry_numlayers \
+    -borderwidth {3} \
+    -width {10} \
+    -relief {sunken} \
+    -textvariable {numlayers}
+
+  button .defineModel.frame0.duplicate \
+    -width 10 \
+    -relief raised \
+    -text "Duplicate" \
+    -command {
+       # duplicates a layer to create 2 new layers with the same parameters
+       #
+       foreach widget $alllistboxes {
+         set thewidget ".defineModel.layerframe.$widget.$widget"
+         if {[$thewidget curselect] != {} } {
+            incr numlayers
+            set s [$thewidget curselection]
+            .defineModel.layerframe.number.number insert end $numlayers
+            foreach aw $layerlistboxes {
+              set awidget ".defineModel.layerframe.$aw.$aw"
+              $awidget insert [expr $s+1] [$awidget get $s]
+              for {set i $numlayers} {$i > [expr $s+1]} {incr i -1} {
+                set layer($i,$aw) $layer([expr $i-1],$aw)
+              }
+            }
+            resetDepthListBox "layer" $numlayers
+            resetPoissonListBox "layer" $numlayers
+            $thewidget select anchor $s
+            unset s
+            unset aw
+            unset awidget
+            unset i
+         }
+         unset widget
+         unset thewidget
+       }
+    }
+
+  button .defineModel.frame0.split \
+    -width 10 \
+    -relief raised \
+    -text "Split" \
+    -command {
+       # splits a layer in half to create 2 new layers
+       #
+       foreach widget $alllistboxes {
+         set thewidget ".defineModel.layerframe.$widget.$widget"
+         if {[$thewidget curselect] != {} } {
+            incr numlayers
+            set s [$thewidget curselection]
+            .defineModel.layerframe.number.number insert end $numlayers
+            set thk [.defineModel.layerframe.thickness.thickness get $s]
+            replaceListboxentry \
+                   .defineModel.layerframe.thickness.thickness $s [expr $thk/2.]
+            $thewidget select anchor $s
+            set layer([expr $s+1],thickness) [expr $thk/2.]
+            unset thk
+            foreach aw $layerlistboxes {
+              set awidget ".defineModel.layerframe.$aw.$aw"
+              $awidget insert [expr $s+1] [$awidget get $s]
+              for {set i $numlayers} {$i > [expr $s+1]} {incr i -1} {
+                set layer($i,$aw) $layer([expr $i-1],$aw)
+              }
+            }
+            resetDepthListBox "layer" $numlayers
+            resetPoissonListBox "layer" $numlayers
+            $thewidget select anchor $s
+            unset s
+            unset aw
+            unset awidget
+            unset i
+         }
+         unset widget
+         unset thewidget
+       }
+    }
+
+  button .defineModel.frame0.delete \
+    -width 10 \
+    -relief raised \
+    -text "Delete" \
+    -command {
+       # deletes a layer
+       #
+       foreach widget $alllistboxes {
+         set thewidget ".defineModel.layerframe.$widget.$widget"
+         if {[$thewidget curselect] != {} } {
+            set s [$thewidget curselection]
+            .defineModel.layerframe.number.number delete end
+            foreach aw $layerlistboxes {
+              set awidget ".defineModel.layerframe.$aw.$aw"
+              $awidget delete $s
+              for {set i [expr $s+1]} {$i < $numlayers} {incr i} {
+                set layer($i,$aw) $layer([expr $i+1],$aw)
+              }
+              unset layer($numlayers,$aw)
+            }
+            incr numlayers -1
+            resetDepthListBox "layer" $numlayers
+            resetPoissonListBox "layer" $numlayers
+            $thewidget select anchor $s
+            unset s
+            unset aw
+            unset awidget
+            unset i
+         }
+         unset widget
+         unset thewidget
+       }
+    }
+
+  checkbutton .defineModel.frame0.prespoisson \
+    -text {Preserve Poisson} \
+    -variable {prespoisson} \
+    -command { resetListBoxEntries layer $numlayers }
+
+  pack append .defineModel.frame0 \
+    .defineModel.frame0.label_numlayers {left frame center} \
+    .defineModel.frame0.entry_numlayers {left frame center} \
+    .defineModel.frame0.duplicate {right frame center} \
+    .defineModel.frame0.split {right frame center} \
+    .defineModel.frame0.delete {right frame center} \
+    .defineModel.frame0.prespoisson {right frame center}
+
+# listboxes
+#
+
+  frame .defineModel.layerframe \
+    -borderwidth {2} \
+    -relief {raised} \
+    -width {10}
+
+  proc layer_scroll {args} {
+   global layerlistboxes alllistboxes
+#  scrolls each listbox when scrollbar is moved
+#
+   foreach widget $alllistboxes {
+     eval .defineModel.layerframe.$widget.$widget yview $args
+   }
+  }
+
+  foreach widget $alllistboxes {
+#
+# create the listboxes and scrollbar
+# and set different colors for layer and derived listboxes
+#
+
+    frame .defineModel.layerframe.$widget
+  
+    if {$widget == "number"} {
+      scrollbar .defineModel.layerframe.number.scrollbar \
+          -command [list layer_scroll]
+    }
+
+    if {$widget != "poisson"} {
+      label .defineModel.layerframe.$widget.label \
+        -padx 3 -pady 3 \
+        -text $widget 
+    } else {
+      global poissonratio
+      if {$poissonratio} {
+         set temp "Poisson"
+      } else {
+         set temp "Vp/Vs"
+      }
+      button .defineModel.layerframe.$widget.label \
+        -text $temp \
+        -padx 1 \
+        -pady 0 \
+        -command {
+           if {$poissonratio} {
+             set poissonratio 0
+             .defineModel.layerframe.poisson.label configure -text "Vp/Vs"
+#     don't calculate average properties if check button not checked
+             if {$avepropyn != 0} {
+               catch { set average_poisson [expr $average_vp / $average_vs] }
+             }
+           } else {
+             set poissonratio 1
+             .defineModel.layerframe.poisson.label configure -text "poisson"
+#     don't calculate average properties if check button not checked
+             if {$avepropyn != 0} {
+               catch { set average_poisson [expr (pow($average_vp,2)-2*pow($average_vs,2) )/( 2*pow($average_vp,2)-2*pow($average_vs,2))] }
+             }
+           }
+           resetPoissonListBox "layer" $numlayers
+        }
+    }
+  
+    listbox .defineModel.layerframe.$widget.$widget \
+      -borderwidth {3} \
+      -relief {sunken} \
+      -yscrollcommand ".defineModel.layerframe.number.scrollbar set" \
+      -width 10 \
+      -height ${dispnumlayers}
+
+    entry .defineModel.layerframe.$widget.average \
+      -width 10 \
+      -relief {sunken} \
+      -textvariable "average_$widget" \
+      -state disabled
+  
+    if {$widget != "number"} {
+#       tk_listboxSingleSelect .defineModel.layerframe.$widget.$widget
+    }
+
+# here we configure listboxes that are derived quantities, i.e. they are
+# not in the layerlistboxes list
+#
+    if {[lsearch $layerlistboxes $widget] == -1} {
+       .defineModel.layerframe.$widget.$widget configure \
+           -selectbackground tomato
+       if {$widget == "number"} {
+          .defineModel.layerframe.$widget.$widget configure \
+           -selectbackground white
+       }
+    }
+
+    if {$widget == "number"} {
+      pack append .defineModel.layerframe.$widget \
+        .defineModel.layerframe.$widget.label {fillx } \
+        .defineModel.layerframe.$widget.average {bottom fillx } \
+        .defineModel.layerframe.$widget.scrollbar {left filly } \
+        .defineModel.layerframe.$widget.$widget {expand fillx filly}
+    } else {
+      pack append .defineModel.layerframe.$widget \
+        .defineModel.layerframe.$widget.label {fillx } \
+        .defineModel.layerframe.$widget.average {bottom fillx } \
+        .defineModel.layerframe.$widget.$widget {expand fillx filly}
+    }
+    pack append .defineModel.layerframe \
+      .defineModel.layerframe.$widget {left expand fillx filly}
+  }
+
+  resetListBoxEntries "layer" $numlayers
+
+
+# some bindings for the model listboxes
+#
+  bind .defineModel.layerframe <Enter> {
+    set templayerfocus [focus]
+    focus %W
+  }
+  bind .defineModel.layerframe <Leave> {focus $templayerfocus}
+#
+#  if it is the up key move up one in the listbox
+  bind .defineModel.layerframe <Key-Up> {
+    set win [selection own]
+    if {$win != {}} {set s [lindex [eval $win curselection] 0]
+    } else {set s {}}
+    if {$s != {}} {
+      eval $win selection clear $s
+      eval $win selection set [expr $s-1]
+    }
+    unset win s
+  }
+#
+#  if it is the up key move down one in the listbox
+  bind .defineModel.layerframe <Key-Down> {
+    set win [selection own]
+    if {$win != {}} {set s [lindex [eval $win curselection] 0]
+    } else {set s {}}
+    if {$s != {}} {
+      eval $win selection clear $s
+      eval $win selection set [expr $s+1]
+    }
+    unset win s
+  }
+#
+#  if it is the left key move left one listbox
+  bind .defineModel.layerframe <Key-Left> {
+    set win [selection own]
+    if {$win != {}} {set s [lindex [eval $win curselection] 0]
+    } else {set s {}}
+    if {$s != {}} {
+      set lbname [lindex [split $win .] 4]
+      set lbnum [lsearch $alllistboxes  $lbname]
+      if {$lbnum > 0} {
+         set lbname [lindex $alllistboxes [expr $lbnum -1]]
+      }
+      eval $win selection clear $s
+      eval .defineModel.layerframe.$lbname.$lbname selection set $s
+    }
+    unset win s
+  }
+#
+#  if it is the right key move right one listbox
+  bind .defineModel.layerframe <Key-Right> {
+    set win [selection own]
+    if {$win != {}} {set s [lindex [eval $win curselection] 0]
+    } else {set s {}}
+    if {$s != {}} {
+      set lbname [lindex [split $win .] 4]
+      set lbnum [lsearch $alllistboxes  $lbname]
+      if {$lbnum < [expr [llength $alllistboxes] -1]} {
+         set lbname [lindex $alllistboxes [expr $lbnum +1]]
+      }
+      eval $win selection clear $s
+      eval .defineModel.layerframe.$lbname.$lbname selection set $s
+    }
+    unset win s
+  }
+#
+    foreach delkey [list Delete BackSpace] {
+      bind .defineModel.layerframe <$delkey> {
+        set win [selection own]
+        set lbname [lindex [split $win .] 4]
+#
+# check to see if this is an editable listbox, ie in layerlistboxes
+        if {[lsearch $layerlistboxes $lbname] != -1} {
+        if {$win != {}} {set s [lindex [eval $win curselection] 0]
+        } else {set s {}}
+        if {$s != {}} {
+          set word [eval $win get $s]
+          set wordlen [string length $word]
+          if {$wordlen > 0} {
+            replaceListboxentry $win $s \
+                   [string range $word 0 [expr [string length $word]-2]]
+            eval $win selection set $s
+            set col [lindex [split $win "."] 3]
+            set layer([expr $s+1],$col) \
+               [string range $word 0 [expr $wordlen-2]]
+            if {$wordlen > 1} {
+              if {($col == "vp" || $col == "vs")} {
+                 resetPoissonListBox "layer" $numlayers
+                 resetAverageProperties $average_top $average_bot
+              }
+              if {$prespoisson && ($col == "vp" || $col == "vs"|| $col == "pgradient")} {
+                 resetSGradientListBox "layer" $numlayers
+              }
+              if {$col == "thickness"} {
+                 resetDepthListBox "layer" $numlayers
+              }
+            }
+            unset col
+          }
+          unset word
+          unset wordlen
+        }
+        unset s
+        }
+        unset win lbname
+      }
+    }
+    bind .defineModel.layerframe <KeyPress> {
+      set win [selection own]
+      set lbname [lindex [split $win .] 4]
+#
+# check to see if this is an editable listbox, ie in layerlistboxes
+      if {[lsearch $layerlistboxes $lbname] != -1} {
+      if {$win != {}} {set s [lindex [eval $win curselection] 0]
+      } else {set s {}}
+#
+#  if the key could be part of a number then append it
+      if {($s != {})&&[string match {[0-9e.+-]} %A]} {
+        set word [eval $win get $s]
+        replaceListboxentry $win $s "${word}%A"
+        eval $win selection set $s
+        set col [lindex [split $win "."] 3]
+        set layer([expr $s+1],$col) "${word}%A"
+#
+#  here we check to make sure the entry in layer is a valid expression, i.e.
+#  we don't want to update the gradients if the p gradient is "-", we should
+#  wait until the next character is typed, such as "-1". Note that this
+#  is not perfect and if you type a "-" and then do something else, like
+#  reopening the window, that forces a redraw of the lists then an error will
+#  still occur. Something to fix later.
+#
+        if {![catch {expr $layer([expr $s+1],$col)}]} {
+          if {$col == "vp" || $col == "vs"} {
+           resetPoissonListBox "layer" $numlayers
+           resetAverageProperties $average_top $average_bot
+          }
+          if {$prespoisson && ($col == "vp" || $col == "vs"|| $col == "pgradient")} {
+           resetSGradientListBox "layer" $numlayers
+          }
+          if {$col == "thickness"} {
+           resetDepthListBox "layer" $numlayers
+          }
+        }
+        unset col
+        unset word
+      }
+      unset s
+      }
+      unset win lbname
+    }
+
+#
+#  if click in number listbox change bounds for average properties
+  bind .defineModel.layerframe.number.number <ButtonPress-1> {
+    set average_top [eval .defineModel.layerframe.number.number nearest %y]
+    .defineModel.layerframe.number.number select anchor $average_top
+  }
+  bind .defineModel.layerframe.number.number <ButtonRelease-1> {
+    set average_bot [eval .defineModel.layerframe.number.number nearest %y]
+    if {$average_top == $average_bot} {
+      set average_top 0
+      .defineModel.layerframe.number.number select anchor $average_top
+      .defineModel.layerframe.number.number select set anchor $average_bot
+    } else {
+      .defineModel.layerframe.number.number select set anchor $average_bot
+    }
+    resetAverageProperties $average_top $average_bot
+  }
+  bind .defineModel.layerframe.number.number <Shift-ButtonPress-1> {
+    set average_top $average_bot
+    set average_bot [eval .defineModel.layerframe.number.number nearest %y]
+    .defineModel.layerframe.number.number select anchor $average_top
+    .defineModel.layerframe.number.number select set anchor $average_bot
+    resetAverageProperties $average_top $average_bot
+  }
+##########################################################
+
+  frame .defineModel.frame12 \
+    -borderwidth {2} \
+    -relief {flat}
+
+# close the define model window
+#
+  button .defineModel.frame12.closeDefineModel \
+    -command {DestroyWindow.defineModel} \
+    -width {15} \
+    -text {OK}
+
+# show the gradients
+  set showgradtext {Show Gradient}
+  button .defineModel.frame12.showgrad \
+    -width {15} \
+    -textvariable {showgradtext} \
+    -command {
+       global sglayer sgnumlayers
+       if {![info exists showgrad]} {set showgrad 1}
+       if {$showgrad} {
+          set showgradtext {Hide Gradient}
+          set showgrad 0
+          dogradients layer numlayers sglayer sgnumlayers
+          resetListBoxEntries "sglayer" $sgnumlayers
+          plotmodel "sglayer" $sgnumlayers
+          unset sglayer
+          unset sgnumlayers
+       } else {
+          set showgradtext {Show Gradient}
+          set showefttext {Show EFT}
+          set showgrad 1
+          set showeft 1
+          resetListBoxEntries "layer" $numlayers
+          plotmodel "layer" $numlayers
+       }
+    }
+
+# show the EFT
+  set showefttext {Show EFT}
+  button .defineModel.frame12.showeft \
+    -width {15} \
+    -textvariable {showefttext} \
+    -command {
+       if {![info exists showeft]} {set showeft 1}
+       if {$showeft} {
+          set showefttext {Hide EFT}
+          set showeft 0
+          dogradients layer numlayers sglayer sgnumlayers
+          doeft sglayer sgnumlayers sflayer sfnumlayers $flattenparam
+          resetListBoxEntries "sflayer" $sfnumlayers
+          plotmodel "sflayer" $sfnumlayers
+          unset sglayer
+          unset sgnumlayers
+          unset sflayer
+          unset sfnumlayers
+       } else {
+          set showefttext {Show EFT}
+          set showgradtext {Show Gradient}
+          set showeft 1
+          set showgrad 1
+          resetListBoxEntries "layer" $numlayers
+          plotmodel "layer" $numlayers
+       }
+    }
+
+# display the model
+  button .defineModel.frame12.dispmodel \
+    -width {15} \
+    -text {Display Model} \
+    -command {
+       ShowWindow.dispmodel 
+    }
+
+#
+# calcuate average properties?
+  checkbutton .defineModel.cb_average \
+    -text {Average Properties} \
+    -variable {avepropyn}
+  
+# apply an earth flattening transform to the model before running?
+#
+  checkbutton .defineModel.frame12.checkbuttonEFT \
+    -text {Earth Flattening Transform} \
+    -variable {eftyn}
+
+# the maximum layer thickness to approximate the earth flattening gradient
+#
+  frame .defineModel.frame12.flattenparam \
+    -borderwidth {2} \
+    -relief {flat}
+
+  label .defineModel.frame12.flattenparam.label_flattenparam \
+    -text {Flattenning Parameter:}
+
+  entry .defineModel.frame12.flattenparam.entry_flattenparam \
+    -borderwidth {3} \
+    -width {10} \
+    -relief {sunken} \
+    -textvariable {flattenparam}
+
+  pack append .defineModel.frame12.flattenparam \
+    .defineModel.frame12.flattenparam.label_flattenparam {left frame center} \
+    .defineModel.frame12.flattenparam.entry_flattenparam {left frame center}
+
+# the maximum layer thickness to approximate the gradient
+#
+  frame .defineModel.frame12.gradientparam \
+    -borderwidth {2} \
+    -relief {flat}
+
+  label .defineModel.frame12.gradientparam.label_gradientparam \
+    -text {Gradient Parameter:    }
+
+  entry .defineModel.frame12.gradientparam.entry_gradientparam \
+    -borderwidth {3} \
+    -width {10} \
+    -relief {sunken} \
+    -textvariable {gradientparam}
+
+  button .defineModel.frame12.gradientparam.allsame \
+    -width 10 \
+    -relief raised \
+    -text "All Layers" \
+    -command {
+       for {set i 1} {$i <= $numlayers} {incr i} {
+          set layer($i,gradparam) $gradientparam
+       }
+       resetListBoxEntries "layer" $numlayers
+    }
+
+  pack append .defineModel.frame12.gradientparam \
+    .defineModel.frame12.gradientparam.label_gradientparam {left frame center} \
+    .defineModel.frame12.gradientparam.entry_gradientparam {left frame center} \
+    .defineModel.frame12.gradientparam.allsame {left frame center} 
+
+  frame .defineModel.frame12.stdmodels \
+    -borderwidth {2} \
+    -relief {flat}
+
+  button .defineModel.frame12.stdmodels.button_stdmodels \
+    -width 10 \
+    -relief raised \
+    -text "PREM" \
+    -command {
+       prem $stdmodeldepth $stdmodelparam layer numlayers
+       resetListBoxEntries "layer" $numlayers
+    }
+
+  frame .defineModel.frame12.stdmodels.fr_depth \
+    -borderwidth {2} \
+    -relief {flat}
+
+  label .defineModel.frame12.stdmodels.fr_depth.lbl_stdmodelsdepth \
+    -text {Maximum Depth:}
+
+  entry .defineModel.frame12.stdmodels.fr_depth.stdmodelsdepth \
+    -borderwidth {3} \
+    -width {10} \
+    -relief {sunken} \
+    -textvariable {stdmodeldepth}
+
+  pack append .defineModel.frame12.stdmodels.fr_depth \
+    .defineModel.frame12.stdmodels.fr_depth.lbl_stdmodelsdepth \
+          {left frame center} \
+    .defineModel.frame12.stdmodels.fr_depth.stdmodelsdepth {left frame center}
+
+  frame .defineModel.frame12.stdmodels.fr_param \
+    -borderwidth {2} \
+    -relief {flat}
+
+  label .defineModel.frame12.stdmodels.fr_param.lbl_stdmodelsparam \
+    -text {Interpolation Parameter:}
+
+  entry .defineModel.frame12.stdmodels.fr_param.stdmodelsparam \
+    -borderwidth {3} \
+    -width {10} \
+    -relief {sunken} \
+    -textvariable {stdmodelparam}
+
+  pack append .defineModel.frame12.stdmodels.fr_param \
+    .defineModel.frame12.stdmodels.fr_param.lbl_stdmodelsparam \
+          {left frame center} \
+    .defineModel.frame12.stdmodels.fr_param.stdmodelsparam {left frame center}
+
+  pack append .defineModel.frame12.stdmodels \
+    .defineModel.frame12.stdmodels.button_stdmodels {left frame n} \
+    .defineModel.frame12.stdmodels.fr_depth {top frame e} \
+    .defineModel.frame12.stdmodels.fr_param {bot frame e}
+
+  pack append .defineModel.frame12 \
+    .defineModel.frame12.closeDefineModel {right frame se} \
+    .defineModel.frame12.showgrad {right frame se} \
+    .defineModel.frame12.showeft {right frame se} \
+    .defineModel.frame12.dispmodel  {right frame se} \
+    .defineModel.frame12.stdmodels {bot frame w} \
+    .defineModel.frame12.checkbuttonEFT {left frame n padx 5} \
+    .defineModel.frame12.flattenparam {top frame w} \
+    .defineModel.frame12.gradientparam {bottom frame w} 
+
+  pack append .defineModel \
+    .defineModel.frame0 {top frame center pady 3 fillx} \
+    .defineModel.layerframe {top frame w expand fillx filly} \
+    .defineModel.cb_average {top frame w} \
+    .defineModel.frame12 {bottom frame center fillx}
+
+#
+#  here we set the focus to layerframe in case the window opens with the mouse
+#  already inside of layerframe. If that happens then there won't be an 
+#  entry event
+  focus .defineModel.layerframe
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree .defineModel"
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+proc DestroyWindow.defineModel {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .defineModel]" != ""} {
+      global xfShowWindow.defineModel
+      set xfShowWindow.defineModel 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .defineModel; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .defineModel"
+    update
+  }
+}
+

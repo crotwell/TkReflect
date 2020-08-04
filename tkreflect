@@ -1,0 +1,397 @@
+#!/bin/sh
+# This comment extends to the next line for tcl but not for sh. Don't remove it\
+exec expectk $0 $*
+#
+# The above fix to avoid having the first line look like
+#!/usr/local/bin/expectk -f
+# was stolen from dbe from JSPC. What a nice idea!
+#
+# tkreflect
+# Tcl version: 8.0
+# Tk version: 8.0
+# Expectk version 5.25
+#
+# tkreflect -- GUI to controll George Randall's reflectivity code
+#     H. Philip Crotwell, summer 1995 until present
+#        version 0.42
+#
+
+# module inclusion
+
+# just to make sure the variable exists later
+set {tkreflect_sourcedir} {.}
+
+# Each users defaults
+# Source the one in ~ first and then the one in the current directory so
+# that the current directory overwrites the values from ~
+#
+# Each users tkreflectrc file should have at a minimum two lines that look
+# like the following without the leading pound signs
+#
+# global {tkreflect_sourcedir}
+# set {tkreflect_sourcedir} {/usr/local/Internal/TkReflect}
+#
+# This provides an easy way of specifing an alternate directory for all of the
+# files that are source'ed. If this variable is not defined than tkreflect
+# looks in ~/bin, and then /usr/local/bin. Note that files in the current
+# directory are the first choice for reading in.
+# The .tkreflectrc is reread later to override any variables different from
+# those found in tkreflect.defaults.
+#
+if [file exists ~/.tkreflectrc] {
+   source ~/.tkreflectrc
+}
+if [file exists .tkreflectrc] {
+   source .tkreflectrc
+} 
+
+if [info exists thesourcefiles] {unset thesourcefiles}
+lappend thesourcefiles {fsBox.tcl}
+lappend thesourcefiles {tkreflect.moment}
+lappend thesourcefiles {cnvrt2mij.lib}
+lappend thesourcefiles {tkreflect.postrunopts}
+lappend thesourcefiles {tkreflect.definemodel}
+lappend thesourcefiles {tkreflect.dispmodel}
+lappend thesourcefiles {tkreflect.average}
+lappend thesourcefiles {tkreflect.alert_direxists}
+lappend thesourcefiles {tkreflect.alert}
+lappend thesourcefiles {tkreflect.parameters}
+lappend thesourcefiles {tkreflect.machineoptions}
+lappend thesourcefiles {tkreflect.runmodel}
+lappend thesourcefiles {tkreflect.readsave}
+lappend thesourcefiles {tkreflect.flatten}
+lappend thesourcefiles {tkreflect.gradient}
+lappend thesourcefiles {tkreflect.defaults}
+lappend thesourcefiles {tkreflect.runmultiple}
+lappend thesourcefiles {tkreflect.sourceinvert}
+lappend thesourcefiles {tkreflect.prem}
+
+foreach sourcefile $thesourcefiles {
+   if [file exists ./$sourcefile] {
+      source ./$sourcefile
+   } elseif [file exists ${tkreflect_sourcedir}/$sourcefile] {
+      source "${tkreflect_sourcedir}/$sourcefile"
+   } elseif [file exists ~/bin/$sourcefile] {
+      source ~/bin/$sourcefile
+   } elseif [file exists /usr/local/bin/$sourcefile] {
+      source /usr/local/bin/$sourcefile
+   } else {
+      puts "Can't find $sourcefile in"
+      puts "${tkreflect_sourcedir}, ., ~/bin, or /usr/local/bin."
+      puts "Exiting"
+      exit 0
+   }
+}
+
+unset thesourcefiles
+unset sourcefile
+# Resource each users defaults.
+# Source the one in ~ first and then the one in the current directory so
+# that the current directory overwrites the values from ~
+if [file exists ~/.tkreflectrc] {
+   source ~/.tkreflectrc
+}
+if [file exists .tkreflectrc] {
+   source .tkreflectrc
+} 
+
+# unset tkreflect_sourcedir as it is no longer needed and we don't want it
+# in the save all file
+unset tkreflect_sourcedir
+
+# initialize some interanal globals
+global connected
+set connected 0
+global paragonspawn_id
+set paragonspawn_id 0
+global runinprogress
+set runinprogress 0
+
+# Main Window , TKREFLECT###
+# procedure to show window .
+proc ShowWindow. {args} {
+  global runmessage
+
+  # Window manager configurations
+  global tkVersion
+  wm positionfrom . user
+  wm sizefrom . ""
+  wm maxsize . 1152 900
+  wm title . {TkReflect}
+
+
+  frame .frame10 \
+    -borderwidth {2} \
+    -relief {raised}
+
+  button .frame10.openDefineModel \
+    -padx 1 -pady 1 \
+    -command {ShowWindow.defineModel} \
+    -text {Define Model}
+
+  button .frame10.readModel_button \
+    -padx 1 -pady 1 \
+    -command {ReadInModelFile } \
+    -text {Read Randall Model}
+
+  button .frame10.readAll \
+    -padx 1 -pady 1 \
+    -command {ReadAllFromFile } \
+    -text {Read All}
+
+  button .frame10.saveAll \
+    -padx 1 -pady 1 \
+    -command {SaveAllToFile } \
+    -text {Save All}
+
+  button .frame10.saveLayer \
+    -padx 1 -pady 1 \
+    -command {SaveLayerToFile } \
+    -text {Save Layer}
+
+  button .frame10.saveModel_button \
+    -padx 1 -pady 1 \
+    -command {SaveModelFile } \
+    -text {Save Randall Model}
+
+  button .frame10.otherparameters_button \
+    -padx 1 -pady 1 \
+    -command {ShowWindow.parameters} \
+    -text {Parameters}
+
+  button .frame10.machineoptions \
+    -padx 1 -pady 1 \
+    -command {ShowWindow.machineoptions} \
+    -text {Machine Options}
+
+  button .frame10.postrunopts \
+    -padx 1 -pady 1 \
+    -command {ShowWindow.postrunopts} \
+    -text {Post Run Options}
+
+  button .frame10.button_run \
+    -padx 1 -pady 1 \
+    -command { RunModel } \
+    -text {Run Model} \
+    -width {10}
+
+  button .frame10.button_runmul \
+    -padx 1 -pady 1 \
+    -command { 
+#  first we check to make sure that there isn't a run in progress. The event
+#  loop for tk is active whenever an expect statement is waiting so it is
+#  possible to attemp to start a run even though one is in progress
+#
+       if {$runinprogress != 0} {
+          ShowWindow.alert "A Run is in Progress, Wait Until it has Finished"
+       } else {
+          set stoprunmul 0
+          RunMultiple
+       }
+    } \
+    -text {Run Multiple} \
+    -width {10}
+
+  checkbutton .frame10.cb_stopmul \
+    -variable {stoprunmul} \
+    -text {Stop Multiple} \
+    -width {10}
+
+  button .frame10.source_invert \
+    -padx 1 -pady 1 \
+    -command { SourceInvert } \
+    -text {Source Inversion} \
+    -width {10}
+
+  button .frame10.button_quit \
+    -padx 0 -pady 0 \
+    -text {Quit} \
+    -command {destroy .} \
+    -width {10}
+
+  pack append .frame10 \
+    .frame10.readModel_button {top frame center fillx} \
+    .frame10.readAll {top frame center fillx} \
+    .frame10.saveModel_button {top frame center fillx} \
+    .frame10.saveAll {top frame center fillx} \
+    .frame10.saveLayer {top frame center fillx} \
+    .frame10.openDefineModel {top frame center fillx} \
+    .frame10.otherparameters_button {top frame center fillx} \
+    .frame10.machineoptions {top frame center fillx} \
+    .frame10.postrunopts {top frame center fillx} \
+    .frame10.button_run {top frame center fillx} \
+    .frame10.button_runmul {top frame center fillx} \
+    .frame10.cb_stopmul {top frame center fillx} \
+    .frame10.source_invert {top frame center fillx} \
+    .frame10.button_quit {top frame center fillx}
+
+
+  frame .frame_runloc \
+    -borderwidth {2} \
+    -relief {raised}
+
+  radiobutton .frame_runloc.local \
+    -text {Local    } \
+    -value {local} \
+    -variable {runloc} \
+    -width {11}
+
+  radiobutton .frame_runloc.localp4 \
+    -text {Local P4 } \
+    -value {localp4} \
+    -variable {runloc} \
+    -width {11}
+
+  radiobutton .frame_runloc.paragon \
+    -text {Paragon  } \
+    -value {paragon} \
+    -variable {runloc} \
+    -width {11}
+
+  label .frame_runloc.label_runloc \
+    -text {Run Type}
+
+  pack append .frame_runloc \
+    .frame_runloc.label_runloc {top frame center pady 4 fillx} \
+    .frame_runloc.local {top frame center} \
+    .frame_runloc.localp4 {top frame center} \
+    .frame_runloc.paragon {top frame center} 
+
+  frame .frame_codetype \
+    -borderwidth {2} \
+    -relief {raised}
+
+  radiobutton .frame_codetype.radiobutton_mij \
+    -text {mijkennett    } \
+    -value {mijkennett} \
+    -variable {codetype} \
+    -width {11}
+
+  radiobutton .frame_codetype.radiobutton_mijfk \
+    -text {mijfkkennett} \
+    -value {mijfkkennett} \
+    -variable {codetype} \
+    -width {11}
+
+  radiobutton .frame_codetype.radiobutton_mgen \
+    -text {mgenkennett} \
+    -value {mgenkennett} \
+    -variable {codetype} \
+    -width {11}
+
+  radiobutton .frame_codetype.radiobutton_diff \
+    -text {diffkennett} \
+    -value {diffkennett} \
+    -variable {codetype} \
+    -width {11}
+
+  label .frame_codetype.label_codetype \
+    -text {Code Type}
+
+  pack append .frame_codetype \
+    .frame_codetype.label_codetype {top frame center pady 4 fillx} \
+    .frame_codetype.radiobutton_mij {top frame center} \
+    .frame_codetype.radiobutton_mijfk {top frame center} \
+    .frame_codetype.radiobutton_mgen {top frame center} \
+    .frame_codetype.radiobutton_diff {top frame center}
+
+  frame .frame_clock \
+    -borderwidth {2} \
+    -relief {raised}
+
+  canvas .frame_clock.clock \
+    -width {100} \
+    -height {75}
+
+  pack append .frame_clock \
+     .frame_clock.clock {bottom frame center}
+
+  frame .frame_numnodes \
+    -borderwidth {2} \
+    -relief {flat}
+
+  message .frame_numnodes.message \
+    -aspect {1500} \
+    -justify {center} \
+    -padx {5} \
+    -pady {2} \
+    -relief {flat} \
+    -textvariable {runmessage}
+
+  pack append .frame_numnodes \
+    .frame_numnodes.message {left frame center expand filly fillx}
+
+  pack append . \
+    .frame_numnodes {bottom frame center expand filly fillx} \
+    .frame10 {left frame center} \
+    .frame_codetype {top frame center} \
+    .frame_runloc {top frame center} \
+    .frame_clock {top frame center}
+
+}
+
+# Procedure: CalcArrayDistAz
+proc CalcArrayDistAz {} {
+# from TJO from Bullen
+   global tcl_precision
+   set tcl_precision 17
+
+   global arraystanames stalatlon
+   global evtdistaz
+   global sourcelat sourcelon
+
+   foreach sta $arraystanames {
+    set stalat $stalatlon($sta,lat)
+    set stalon $stalatlon($sta,lon)
+    set evtlat $sourcelat
+    set evtlon $sourcelon
+ 
+    set pi 3.141592654
+    set degtorad [expr $pi/180.0]
+    set sph [expr 1.0/298.257]
+    
+    set scolat [expr $pi/2 - atan(pow((1-$sph),2)*tan($stalat*$degtorad))]
+    set ecolat [expr $pi/2 - atan(pow((1-$sph),2)*tan($evtlat*$degtorad))]
+    set slon [expr $stalon*$degtorad]
+    set elon [expr $evtlon*$degtorad]
+ 
+    set a [expr sin($scolat)*cos($slon)]
+    set b [expr sin($scolat)*sin($slon)]
+    set c [expr cos($scolat)]
+    set d [expr sin($slon)]
+    set e [expr -cos($slon)]
+    set g [expr -$c*$e]
+    set h [expr $c*$d]
+    set k [expr -sin($scolat)]
+ 
+    set aa [expr sin($ecolat)*cos($elon)]
+    set bb [expr sin($ecolat)*sin($elon)]
+    set cc [expr cos($ecolat)]
+    set dd [expr sin($elon)]
+    set ee [expr -cos($elon)]
+    set gg [expr -$cc*$ee]
+    set hh [expr $cc*$dd]
+    set kk [expr -sin($ecolat)]
+ 
+    set del [expr acos($a*$aa + $b*$bb + $c*$cc)/$degtorad]
+    
+    set rhs1 [expr ($a-$dd)*($a-$dd)+($b-$ee)*($b-$ee)+$c*$c - 2.0]
+    set rhs2 [expr ($a-$gg)*($a-$gg)+($b-$hh)*($b-$hh)+($c-$kk)*($c-$kk) - 2.0]
+    set daz [expr atan2($rhs1,$rhs2)]
+    if {$daz < 0.0} {set daz [expr $daz+2*$pi]}
+    if {abs($daz - 2*$pi) < 0.00001} {set daz 0.0}
+    set az [expr $daz/$degtorad]
+    set tcl_precision 4
+# Round distances to nearest kilometer
+    set evtdistaz($sta,dist) [expr round($del*111.19)]
+    set evtdistaz($sta,az) [expr $az]
+    set tcl_precision 17
+   }
+  set tcl_precision 6
+ 
+}
+# display/remove toplevel windows.
+ShowWindow.
+# eof
+#
+

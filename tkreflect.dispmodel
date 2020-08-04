@@ -1,0 +1,122 @@
+#
+proc ShowWindow.dispmodel {args} {
+
+  # build widget .dispmodel
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .dispmodel"
+  } {
+    catch "destroy .dispmodel"
+  }
+  toplevel .dispmodel 
+
+  # Window manager configurations
+  global tkVersion
+  wm title .dispmodel {TJO's Display Model, Blame Him Not Me}
+
+
+  canvas .dispmodel.canvas \
+    -height {12c} \
+    -insertofftime {600} \
+    -relief {raised} \
+    -background white \
+    -width {12c}
+
+  frame .dispmodel.controlls \
+    -borderwidth {2} \
+    -relief {raised}
+
+  button .dispmodel.controlls.close \
+    -command {DestroyWindow.dispmodel} \
+    -text {Close}
+
+  pack append .dispmodel.controlls \
+    .dispmodel.controlls.close {top frame center}
+
+  pack append .dispmodel \
+    .dispmodel.canvas {top frame center} \
+    .dispmodel.controlls {top frame center}
+
+  global layer numlayers
+  plotmodel layer $numlayers
+}
+
+proc DestroyWindow.dispmodel {} {
+    catch "destroy .dispmodel"
+    update
+}
+
+proc plotmodel {layername numlayers} {
+   upvar $layername layer
+#
+# Most of this was written by TJO, here is his 15 minutes of fame!
+#
+
+# first check to see if the dispmodel widget is open
+if {[info  commands .dispmodel] == {}} {return}
+
+set items [list vp vs rho]
+set color(vp) red
+set color(vs) blue
+set color(rho) RosyBrown
+set itemmin 20
+set itemmax 0
+set lyrstart 1
+#set lyrend   75
+set lyrend   $numlayers
+ 
+.dispmodel.canvas delete all
+#
+# Find the Min/Max of parameter for scaling
+#
+set h 0
+for {set i 1} {$i < $lyrstart} {incr i} {
+    set h [expr $h + $layer($i,thickness)]
+    }
+set hmin [expr $h - 0.05*$h]
+for {set i $lyrstart} {$i <= $lyrend} {incr i} {
+    set h [expr $h + $layer($i,thickness)]
+    }
+set hmax [expr $h + 0.05*$h]
+set hscale [expr 12 / ($hmax - $hmin)]
+foreach item $items {
+for {set i $lyrstart} {$i <= $lyrend} {incr i} {
+    if { $layer($i,$item) < $itemmin } {set itemmin $layer($i,$item)}
+    if { $layer($i,$item) > $itemmax } {set itemmax $layer($i,$item)}
+    }
+set itemmax [expr $itemmax + 0.05*$itemmax]
+set itemmin [expr $itemmin - 0.05*$itemmin]
+}
+
+foreach item $items {
+#
+# Calculate Scaling Factor
+#
+set scale [expr 12 / ($itemmax - $itemmin)]
+ 
+#
+set fromy 0
+set fromx 0
+set toy 0
+set yoffset [expr $hmin * $hscale ]
+set xoffset [expr $itemmin * $scale ]
+set h $hmin
+#
+for {set i $lyrstart} {$i <= $lyrend} {incr i} {
+    set newitem $layer($i,$item)
+    set newitem [expr $newitem * $scale]
+    set tox [expr $newitem - $xoffset]
+    .dispmodel.canvas create line ${fromx}c ${fromy}c ${tox}c ${toy}c -fill $color($item)
+    set fromx $tox
+    set fromy $toy
+    set h [expr $h + $layer($i,thickness)]
+    set newh [expr $h * $hscale]
+    set toy [expr $newh - $yoffset]
+    .dispmodel.canvas create line ${fromx}c ${fromy}c ${tox}c ${toy}c -fill $color($item)
+#    puts "line ${fromx}c ${fromy}c ${tox}c ${toy}c"
+    set fromx $tox
+    set fromy $toy
+    }
+    .dispmodel.canvas create text ${tox}c ${toy}c -text $item -anchor sw -fill $color($item)
+}
+
+}

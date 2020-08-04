@@ -1,0 +1,57 @@
+proc RunMultiple {} {
+global stoprunmul
+#
+# Makes multiple runs looping over given variables, or can be used for 
+# customization
+#
+# You can modify this to preform whatever looping options your heart desires!
+# RunMultiple is called when the Run Multiple button is pushed.
+#
+#  First any variables that are changed must be declared global.
+#
+   global stalist
+   global layer numlayers
+   global localdir
+ 
+# Next we can choose to run a subset of the stations in the array if using the
+# array spacing choice. Comment these out if you want the entire array. These
+# can also be set using the check buttons in the parameters widget.
+#
+   set stalist [list wndo erdo budo]
+   ResetStaCheckBoxes
+   MakeArraySpacing
+#
+# Set up loops over choosen variables.
+#
+   for {set tvp 6.1} {$tvp < 6.3} {set tvp [expr $tvp + .1]} {
+      for {set bvp 5.9} {$bvp < 6.2} {set bvp [expr $bvp + .1]} {
+         set layer(2,vp) $tvp
+         set layer(2,vs) [expr $tvp/sqrt(3)]
+         set layer(3,vp) $bvp
+         set layer(3,vs) [expr $bvp/sqrt(3)]
+#
+#   Here we have changed the layer array so we need to update the listboxes
+#   if they are visible. Listboxes are not updated automatically unlike entry
+#   widgets. 
+#   resetListBoxEntries reloads the listboxes if they are visible
+#   the first arguemant is the name of the array holding the layers, this
+#   is the only way to pass an array to a procedure in tcl
+#   the second arguement is the number of layers in the model
+#
+         resetListBoxEntries "layer" $numlayers
+#
+#   Remeber to change localdir each time or tkreflect will ask to overwrite
+#   the old results each time.
+#
+         set localdir /seis/data6/crotwell/Lots_O_Runs/t${tvp}_b${bvp}
+#
+#   Lastly call RunModel. It will run the model using the changes you have made.
+#
+         RunModel
+         if {$stoprunmul == 1} {
+            set stoprunmul 0
+            return 0
+         }
+      }
+   }
+}

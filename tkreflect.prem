@@ -1,0 +1,247 @@
+
+#  procedure to return a PREM-like model in a layer array
+#
+proc prem {maxdepth nlfactor layername numlayersname} {
+upvar $layername layer
+upvar $numlayersname numlayers
+global gradientparam
+
+set tcl_precision 17
+#
+#  set up radii array
+#
+set rad(0)     0.0
+set rad(1)  1221.5 
+set rad(2)  3480.0 
+set rad(3)  3630.0 
+set rad(4)  5600.0 
+set rad(5)  5701.0 
+set rad(6)  5771.0 
+set rad(7)  5971.0 
+set rad(8)  6151.0 
+set rad(9)  6291.0 
+set rad(10) 6346.6 
+set rad(11) 6356.0 
+set rad(12) 6371.0
+
+#  set up p velocity parameters 
+# 0 = const, 1 = x, 2 = x^2, 3 = x^3
+#
+set p(1,0) 11.2622 ;set p(1,1)   0.0000 ;set p(1,2) -6.3640 ;set p(1,3)   0.0000
+set p(2,0) 11.0487 ;set p(2,1)  -4.0362 ;set p(2,2)  4.8023 ;set p(2,3) -13.5732
+set p(3,0) 15.3891 ;set p(3,1)  -5.3181 ;set p(3,2)  5.5242 ;set p(3,3)  -2.5514
+set p(4,0) 24.9520 ;set p(4,1) -40.4673 ;set p(4,2) 51.4832 ;set p(4,3) -26.6419
+set p(5,0) 29.2766 ;set p(5,1) -23.6027 ;set p(5,2)  5.5242 ;set p(5,3)  -2.5514
+set p(6,0) 19.0957 ;set p(6,1)  -9.8672 ;set p(6,2)  0.0000 ;set p(6,3)   0.0000
+set p(7,0) 39.7027 ;set p(7,1) -32.6166 ;set p(7,2)  0.0000 ;set p(7,3)   0.0000
+set p(8,0) 20.3926 ;set p(8,1) -12.2569 ;set p(8,2)  0.0000 ;set p(8,3)   0.0000
+set p(9,0)  4.1875 ;set p(9,1)   3.9382 ;set p(9,2)  0.0000 ;set p(9,3)   0.0000
+set p(10,0) 4.1875 ;set p(10,1)  3.9382 ;set p(10,2) 0.0000 ;set p(10,3)  0.0000
+set p(11,0) 6.8000 ;set p(11,1)  0.0000 ;set p(11,2) 0.0000 ;set p(11,3)  0.0000
+set p(12,0) 5.8000 ;set p(12,1)  0.0000 ;set p(12,2) 0.0000 ;set p(12,3)  0.0000
+
+#
+#  set up s velocity parameters
+#
+set s(1,0)  3.6678 ;set s(1,1)   0.0000 ;set s(1,2) -4.4475 ;set s(1,3)  0.0000
+set s(2,0)  0.0000 ;set s(2,1)   0.0000 ;set s(2,2)  0.0000 ;set s(2,3)  0.0000
+set s(3,0)  6.9254 ;set s(3,1)   1.4672 ;set s(3,2) -2.0834 ;set s(3,3)  0.9783
+set s(4,0) 11.1671 ;set s(4,1) -13.7818 ;set s(4,2) 17.4575 ;set s(4,3) -9.2777
+set s(5,0) 22.3459 ;set s(5,1) -17.2473 ;set s(5,2) -2.0834 ;set s(5,3)  0.9783
+set s(6,0)  9.9839 ;set s(6,1)  -4.9324 ;set s(6,2)  0.0000 ;set s(6,3)  0.0000
+set s(7,0) 22.3512 ;set s(7,1) -18.5856 ;set s(7,2)  0.0000 ;set s(7,3)  0.0000
+set s(8,0)  8.9496 ;set s(8,1)  -4.4597 ;set s(8,2)  0.0000 ;set s(8,3)  0.0000
+set s(9,0)  2.1519 ;set s(9,1)   2.3481 ;set s(9,2)  0.0000 ;set s(9,3)  0.0000
+set s(10,0) 2.1519 ;set s(10,1)  2.3481 ;set s(10,2) 0.0000 ;set s(10,3) 0.0000
+set s(11,0) 3.9000 ;set s(11,1)  0.0000 ;set s(11,2) 0.0000 ;set s(11,3) 0.0000
+set s(12,0) 3.2000 ;set s(12,1)  0.0000 ;set s(12,2) 0.0000 ;set s(12,3) 0.0000
+
+#
+#  set up density parameters
+#
+set d(1,0) 13.0885 ;set d(1,1)  0.0000 ;set d(1,2) -8.8381 ;set d(1,3)  0.0000
+set d(2,0) 12.5815 ;set d(2,1) -1.2638 ;set d(2,2) -3.6426 ;set d(2,3) -5.5281
+set d(3,0)  7.9565 ;set d(3,1) -6.4761 ;set d(3,2)  5.5283 ;set d(3,3) -3.0807
+set d(4,0)  7.9565 ;set d(4,1) -6.4761 ;set d(4,2)  5.5283 ;set d(4,3) -3.0807
+set d(5,0)  7.9565 ;set d(5,1) -6.4761 ;set d(5,2)  5.5283 ;set d(5,3) -3.0807
+set d(6,0)  5.3197 ;set d(6,1) -1.4836 ;set d(6,2)  0.0000 ;set d(6,3)  0.0000
+set d(7,0) 11.2494 ;set d(7,1) -8.0298 ;set d(7,2)  0.0000 ;set d(7,3)  0.0000
+set d(8,0)  7.1089 ;set d(8,1) -3.8045 ;set d(8,2)  0.0000 ;set d(8,3)  0.0000
+set d(9,0)  2.6910 ;set d(9,1)  0.6924 ;set d(9,2)  0.0000 ;set d(9,3)  0.0000
+set d(10,0) 2.6910 ;set d(10,1) 0.6924 ;set d(10,2) 0.0000 ;set d(10,3) 0.0000
+set d(11,0) 2.9000 ;set d(11,1) 0.0000 ;set d(11,2) 0.0000 ;set d(11,3) 0.0000
+set d(12,0) 2.6000 ;set d(12,1) 0.0000 ;set d(12,2) 0.0000 ;set d(12,3) 0.0000
+
+#
+#  set up Q kappa parameters
+#
+set qk(1)  1327.7
+set qk(2) 57823.0
+set qk(3) 57823.0
+set qk(4) 57823.0
+set qk(5) 57823.0
+set qk(6) 57823.0
+set qk(7) 57823.0
+set qk(8) 57823.0
+set qk(9) 57823.0
+set qk(10) 57823.0
+set qk(11) 57823.0
+set qk(12) 57823.0
+
+#
+#  set up Q s parameters
+#
+set qs(1)    84.6
+set qs(2)   9999.9
+set qs(3)   312.0
+set qs(4)   312.0
+set qs(5)   312.0
+set qs(6)   143.0
+set qs(7)   143.0
+set qs(8)   143.0
+set qs(9)    80.0
+set qs(10)   600.0
+set qs(11)   600.0
+set qs(12)   600.0
+
+set radius 6371.0
+set depth 0.0
+
+#
+# The top 7 layers in PREM are linear so there is no need to interpolate them
+#
+for {set i 1} {$i <= 7} {incr i} {
+   set j [expr 12-$i+1]
+   set layer($i,thickness) [expr $rad($j)-$rad([expr $j-1])]
+
+   set y [expr $rad($j)/$radius]
+   set layer($i,vp) [expr $p($j,0) + $p($j,1)*$y]
+   if {$p($j,1) == 0.0} { set layer($i,pgradient) 0.0 
+   } else {
+      set layer($i,pgradient) [expr -1.0*$p($j,1)/$radius]
+   }
+   set layer($i,vs) [expr $s($j,0) + $s($j,1)*$y]
+   if {$s($j,1) == 0.0} { set layer($i,sgradient) 0.0 
+   } else {
+      set layer($i,sgradient) [expr -1.0*$s($j,1)/$radius]
+   }
+   set layer($i,rho) [expr $d($j,0) + $d($j,1)*$y]
+   set layer($i,qs) $qs($j)
+   set vr [expr $layer($i,vs)/$layer($i,vp)]
+   set b [expr (4.0/3.0)*$vr*$vr]
+   set t1 [expr 1.0/((1+$b)*$qk($j))]
+   set t2 [expr $b/$qs($j)]
+   set layer($i,qp) [expr 1.0/($t1+$t2)]
+
+   set layer($i,gradparam) $gradientparam
+
+   set olddepth $depth
+   set depth [expr $depth + $layer($i,thickness)]
+   if {$depth > $maxdepth} {
+      set layer($i,thickness) [expr $maxdepth - $olddepth]
+      set oldi $i
+      incr i
+      set layer($i,thickness) 0.0
+      set y [expr ($radius-$maxdepth)/$radius]
+      set layer($i,vp) [expr $p($j,0) + $p($j,1)*$y]
+      set layer($i,vs) [expr $s($j,0) + $s($j,1)*$y]
+      set layer($i,rho) [expr $d($j,0) + $d($j,1)*$y]
+      set layer($i,qp) $layer($oldi,qp)
+      set layer($i,qs) $layer($oldi,qs)
+      set layer($i,pgradient) 0.0
+      set layer($i,sgradient) 0.0
+      set layer($i,gradparam) 1.0
+      set numlayers $i
+      return 0
+   }
+}
+set numlayers 7
+
+#
+# The deepest 5 layers are cubics so we interpolate to get piecewise linear
+#
+set notlastlayer 1
+set i 8
+while {$notlastlayer} {
+   if {$i == 12} {set notlastlayer 0}
+   set j [expr 12-$i+1]
+   if {$radius - $rad([expr $j-1]) >= $maxdepth} {
+      set notlastlayer 0
+      set tempthk [expr $rad($j) - $radius + $maxdepth]
+      set nnl [expr round(ceil($tempthk/$nlfactor))]
+      if {$nnl < 1} { set nnl 1 }
+      set dz [expr $tempthk / $nnl]
+puts "nnl $nnl dz $dz nlfactor $nlfactor tempthk $tempthk"
+   } else {
+      set nnl [expr round(ceil(($rad($j)-$rad([expr $j-1]))/$nlfactor))]
+      if {$nnl < 1} { set nnl 1 }
+      set dz [expr ($rad($j)-$rad([expr $j-1])) / $nnl]
+   }
+   for {set k 0} {$k < $nnl} {incr k} {
+      incr numlayers
+      set layer($numlayers,thickness) $dz
+      set y [expr ($rad($j)-$k*$dz)/$radius]
+      set yy [expr $y*$y]
+      set yyy [expr $y*$yy]
+      set layer($numlayers,vp) \
+          [expr $p($j,0) + $p($j,1)*$y + $p($j,2)*$yy +$p($j,3)*$yyy]
+      set layer($numlayers,vs) \
+          [expr $s($j,0) + $s($j,1)*$y + $s($j,2)*$yy +$s($j,3)*$yyy]
+      set layer($numlayers,rho) \
+          [expr $d($j,0) + $d($j,1)*$y + $d($j,2)*$yy +$d($j,3)*$yyy]
+
+      set y [expr ($rad($j)-($k+1)*$dz)/$radius]
+      set yy [expr $y*$y]
+      set yyy [expr $y*$yy]
+      set nextvp \
+          [expr $p($j,0) + $p($j,1)*$y + $p($j,2)*$yy +$p($j,3)*$yyy]
+      set nextvs \
+          [expr $s($j,0) + $s($j,1)*$y + $s($j,2)*$yy +$s($j,3)*$yyy]
+      set nextrho \
+          [expr $d($j,0) + $d($j,1)*$y + $d($j,2)*$yy +$d($j,3)*$yyy]
+      set layer($numlayers,pgradient) \
+          [expr ($nextvp - $layer($numlayers,vp))/$layer($numlayers,thickness)]
+      set layer($numlayers,sgradient) \
+          [expr ($nextvs - $layer($numlayers,vs))/$layer($numlayers,thickness)]
+
+      set layer($numlayers,qs) $qs($j)
+      set vr [expr $layer($numlayers,vs)/$layer($numlayers,vp)]
+      set b [expr (4.0/3.0)*$vr*$vr]
+      set t1 [expr 1.0/((1+$b)*$qk($j))]
+      set t2 [expr $b/$qs($j)]
+      set layer($numlayers,qp) [expr 1.0/($t1+$t2)]
+      set layer($numlayers,gradparam) $gradientparam
+
+      set olddepth $depth
+      set depth [expr $depth + $layer($numlayers,thickness)]
+   }
+   if {$notlastlayer==0} {
+      set layer($numlayers,thickness) [expr $maxdepth - $olddepth]
+      set oldnumlayers $numlayers
+      incr numlayers
+
+      set layer($numlayers,thickness) 0.0
+      set y [expr 1 - $maxdepth/$radius]
+      set yy [expr $y*$y]
+      set yyy [expr $y*$yy]
+      set layer($numlayers,vp) \
+          [expr $p($j,0) + $p($j,1)*$y + $p($j,2)*$yy +$p($j,3)*$yyy]
+      set layer($numlayers,vs) \
+          [expr $s($j,0) + $s($j,1)*$y + $s($j,2)*$yy +$s($j,3)*$yyy]
+      set layer($numlayers,rho) \
+          [expr $d($j,0) + $d($j,1)*$y + $d($j,2)*$yy +$d($j,3)*$yyy]
+
+      set layer($numlayers,qs) $qs($j)
+      set vr [expr $layer($numlayers,vs)/$layer($numlayers,vp)]
+      set b [expr (4.0/3.0)*$vr*$vr]
+      set t1 [expr 1.0/((1+$b)*$qk($j))]
+      set t2 [expr $b/$qs($j)]
+      set layer($numlayers,qp) [expr 1.0/($t1+$t2)]
+      set layer($numlayers,pgradient) 0.0
+      set layer($numlayers,sgradient) 0.0
+      set layer($numlayers,gradparam) $gradientparam
+      return 0
+   }
+   incr i
+}
+}

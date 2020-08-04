@@ -1,0 +1,122 @@
+
+Main Window:
+------------
+Read Randall Model
+	Opens a file selector to select the model file (Randall format) to be
+        read in and then reads that file in. This only changes the values
+        that are actually in a Randall model file. All others remain unchanged.
+
+Read All
+        Reads in previously Save All file. These files are tcl 'set var value'
+        statements that are source'd. They are ASCII and could be easily 
+        edited.
+        
+Save Randall Model
+	Opens the same fileselector and then saves the current model. 
+        Note that only the parameters actually in the model file for Randall's
+        code are saved, i.e. no information about gradients, source, etc.
+
+Save All
+        Saves all (useful) variables into an ASCII file in tclsh format that 
+        can be read in by just source'ing the file. These files are ascii and
+	contain simple tcl 'set var value' statements and can be edited easily.
+
+Save Layer
+	Similar to Save All except it only saves the layers of the model and
+	the number of layers. Useful if yo want to use a velocity model but
+	don't want all of the extra baggage.
+
+Define Model
+	Opens a window with input widgets to change the earth model. 
+	The Earth Flattening Transform checkbutton specifies
+	wheather or not to apply the earth flattening transform to the model.
+	The gradient specifies whether or not (i.e. if not equal to 0.0) to
+	apply the a gradient to that particular layer using the value
+	given to the model. The flatten and gradient parameters
+	control the maximum size of a layer for a gradient or EFT.
+        Note that the layer thickness for the EFT is calculated in the flatten
+        reference frame so specifying the EFT parameter slightly larger than
+	the gradient parameter avoids gradient layers being further divided.
+        Note that there are several different ways to implement gradients
+        and the earth flattenning transform so it would be wise to have a look
+        at these procedures to be sure they are doing things the way you want.
+	Clicking and dragging, or clicking and shift-clicking, in the number
+	column calculates average properties for the selected layers and 
+	displays them below their respective columns.
+	Once a number has been changed in an input widget there is no undo.
+	The OK button closes the window.
+
+Parameters
+	Opens a window with input widgets to change the other parameters of the
+	model,(slowness window, frequency window, etc.) The radio buttons in the
+	receiver section toggle between a single receiver, regular spaced 
+	receivers, and irregularly spaced receivers and irregualarly spaced
+        receivers calculated from the event lat and lon and the lats and lons
+        of the given array. The array can be changed in the tkreflect_defaults
+        file or in the users .tkreflectrc file. Changing the distance to
+	negative, for instance, does not yet always bring up the correct widgets
+	(hopefully I'll fix this soon). The Code Type radiobuttons in the main
+	window determine whether the mxx, mxy,... input widgets are displayed.
+
+Machine Options
+	Opens a window to input machine and user specific information, as well
+	as the directories to make the runs in on both the local and remote 
+	machines. The code is very sensitive to the remote prompt for paragon
+        runs, but the local
+	prompt isn't used yet. The prompts are entered as regular expressions,
+	my prompt on samson looks like "crotwell@samson 56 % " and so I use the
+	reguler expresion "crotwell@samson [0-9]+ % ". There is an input for 
+	the total number of nodes on the remote machine in case that changes.
+	I will make tkreflect determine that automatically soon.
+
+Post Run Options
+	Opens a window to input the reducing velocity and offset for spec2zrt,
+        as well as displacement/velocity and step/impulse toggles and
+        a toggle for z up or z down (this multiplies everything by -1 depending
+        so be careful as to which coordinate system you want. There are
+        toggles for marking the "first" arrival using the sac A header but
+        this is often incorrect for more complicated models. The toggle for
+        gfcombine assumes that you have set up the P and T axis using the
+	Convert to Moment Tensor widget at the bottom and that you are
+        using the "Array Spacing" option under Parameters. It uses P and T as 
+        they are easy to rotate to correct for difference between the calculated
+        azimuth and the true azimuth.
+
+Run Model
+	Sends the model off to the remote machine if a remote run,
+        applies gradients and EFT
+	if needed, determines the number of free processors, graps the biggest
+	number that it can, creates the mijkennett.pg file, executes pexec,
+	and copies the working directory back when it is done. It also creates
+	directories as needed and cleans up after itself. Most of this stuff
+	is preserved by scripting into the file output.
+        If it is a local run it does similar stuff locally without the parallel
+        stuff.
+	Note that if a parallel run takes over 4 hours it kills it. The 
+	assumption is that if a run takes longer than this something is wrong.
+	This time can be lengthened in the tkreflect.defaults file or in each
+	users .tkreflectrc file with the maxruntime variable.
+
+Run Multiple
+	This calls the RunMultiple procedure which is defined in 
+	tkreflect.runmultiple. In order to make use of this you should copy
+	tkreflect.runmultiple_sample to tkreflect.runmultiple in the current
+	directory and edit it. By changing this procedure you can have
+	tkreflect make multiple runs looping over whatever variables you
+	desire. Tkreflect looks for tkreflect.runmultiple first in the current
+	directory, then in the directory specified by tkreflect_sourcedir which
+	is defined in the users .tkreflectrc file. If it doesn't exists in 
+	either of these places then it looks in ~/bin and then 
+	in /usr/local/bin. The version in tkreflect_sourcedir just changes the 
+	runmessage.
+
+Quit
+	Just quits.
+
+Code Type radiobuttons
+	Toggle between the 3 code types. 
+
+
+For remote runs you need to have your .rhosts set up so that you can rsh and 
+rcp without needing to enter a password. ( I'll set it up to prompt if it 
+needs it later)

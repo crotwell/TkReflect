@@ -1,0 +1,427 @@
+proc SetLayerDefaults {} {
+   global layer
+   global layerdefaults
+   global layerlistboxes
+   global numlayers
+
+#  set any unset layer parameters to defaults
+   foreach l $layerlistboxes {
+     for {set i 1} { $i <= $numlayers } {incr i} {
+       if {![info exists layer($i,$l)]} {
+         set layer($i,$l) $layerdefaults($l)
+       }
+     }
+   }
+#    if define model is open then reset the listboxes
+   resetListBoxEntries "layer" $numlayers
+}
+
+proc ReadInModelFile {} {
+   global codetype
+   global typedistance
+   global numlayers 
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global layer
+   global layerlistboxes
+   global layerdefaults
+
+   set tempmodelfilename [FSBox "Select read model file:"]
+   if {$tempmodelfilename == ""} {
+      unset tempmodelfilename
+      return 1
+   }
+   if {![file exists $tempmodelfilename]} {
+      send_error "$tempmodelfilename does not exists.\n\n"
+      return 1
+   }
+   set modelfilename $tempmodelfilename
+   unset tempmodelfilename
+   set f [open $modelfilename r]
+   set oldnumlayers $numlayers
+   gets $f numlayers
+   for {set i 1} { $i <= $numlayers } {incr i} {
+      set line ""
+      gets $f line
+      regsub -all { +} $line " " line
+      regsub {^ } $line "" line
+      set linelist [split $line " "]
+      set layer($i,thickness) [lindex $linelist 0]
+      set layer($i,vp) [lindex $linelist 1]
+      set layer($i,vs) [lindex $linelist 2]
+      set layer($i,rho) [lindex $linelist 3]
+      set layer($i,qp) [lindex $linelist 4]
+      set layer($i,qs) [lindex $linelist 5]
+   }
+   for {set i [expr $numlayers+1]} { $i <= $oldnumlayers } {incr i} {
+      unset layer($i,thickness)
+      unset layer($i,vp)
+      unset layer($i,vs)
+      unset layer($i,rho)
+      unset layer($i,qp)
+      unset layer($i,qs)
+   }
+#   Slowness Parameters
+   set line ""
+   gets $f line
+   regsub -all { +} $line " " line
+   set linelist [split $line " "]
+   set lowcut [lindex $linelist 0]
+   set lowpass [lindex $linelist 1]
+   set highpass [lindex $linelist 2]
+   set highcut [lindex $linelist 3]
+   set controlfac [lindex $linelist 4]
+#   Frequency Parameters
+   set line ""
+   gets $f line
+   regsub -all { +} $line " " line
+   set linelist [split $line " "]
+   set fmin [lindex $linelist 0]
+   set fmax [lindex $linelist 1]
+   set fnyquist [lindex $linelist 2]
+   set numtimepoints [lindex $linelist 3]
+#   Receiver Distance and Azimuth Parameters
+   set line ""
+   gets $f line
+   regsub -all { +} $line " " line
+   set linelist [split $line " "]
+   set distance [lindex $linelist 0]
+   set azimuth [lindex $linelist 1]
+   if {$distance == 0} {
+      set typedistance "regular"
+      set line ""
+      gets $f line
+      regsub -all { +} $line " " line
+      set linelist [split $line " "]
+      set rmindist [lindex $linelist 0]
+      set rdeltadist [lindex $linelist 1]
+      set numrdist [lindex $linelist 2]
+   } elseif {$distance < 0} {
+      set typedistance "irregular"
+      set line ""
+      gets $f line
+      regsub -all { +} $line " " line
+      set linelist [split $line " "]
+      set numrdist [lindex $linelist 0]
+      set line ""
+      gets $f line
+      regsub -all { +} $line " " rdistances
+   } else {
+      set typedistance "single"
+   }
+# This is apparently not implemented yet in mgenkennett
+#########################################################
+# Number of Sources ( mgenkennett only)
+#   if {[string compare $codetype "mgenkennett"] == 0} {
+#      set line ""
+#      gets $f line
+#      regsub -all { +} $line " " line
+#      set linelist [split $line " "]
+#      set numsources [lindex $linelist 0]
+#   } elseif {[string compare $codetype "mijfkkennett"] == 0} {
+#      puts "Fix this for mijfkkennett"
+#   }
+#
+# Source depth(s)
+#   if {[string compare $codetype "mgenkennett"] == 0} {
+#      set line ""
+#      gets $f line
+#      regsub -all { +} $line " " line
+#      set linelist [split $line " "]
+#      for {set i 0} {$i < $numsources} {incr i} {
+#         set sourcedeptharray($i) [lindex $linelist $i]
+#      }
+#   } elseif {[string compare $codetype "mijfkkennett"] == 0} {
+#      puts "Fix this for mijfkkennett"
+#   } elseif  {[string compare $codetype "mijkennett"] == 0} {
+      set line ""
+      gets $f line
+      regsub -all { +} $line " " line
+      set linelist [split $line " "]
+      set sourcedepth [lindex $linelist 0]
+#   }
+#########################################################
+#
+# Receiver depth
+   set line ""
+   gets $f receiverdepth 
+# Moment Tensor Components
+   if {[string compare $codetype "mgenkennett"] == 0} {
+      set line ""
+      gets $f line
+      regsub -all { +} $line " " line
+      set linelist [split $line " "]
+      set mtarray(xx) [lindex $linelist 0]
+      set mtarray(xy) [lindex $linelist 1]
+      set mtarray(xz) [lindex $linelist 2]
+      set mtarray(yy) [lindex $linelist 3]
+      set mtarray(yz) [lindex $linelist 4]
+      set mtarray(zz) [lindex $linelist 5]
+   }
+close $f
+SetLayerDefaults
+}
+
+proc ReadAllFromFile {} {
+global typedistance
+global rdistances numrdist stalist evtdistaz
+global numlayers
+global layerlistboxes
+global layerdefaults
+#
+   set tempsavefilename [FSBox "Select read all file:"]
+   if {$tempsavefilename == ""} {
+      unset tempsavefilename
+      return 1
+   }
+   set oldnumlayers $numlayers
+   source $tempsavefilename
+#
+# unset unneeded layers
+   foreach l $layerlistboxes {
+     for {set i [expr $numlayers+1]} { $i <= $oldnumlayers } {incr i} {
+      unset layer($i,$l)
+     }
+   }
+   SetLayerDefaults
+#    if "Station Spacing" then update rdistances list
+   if {$typedistance == "irregArray"} {
+      CalcArrayDistAz
+      set rdistances ""
+      set numrdist 0
+      foreach sta $stalist {
+         incr numrdist
+         append rdistances $evtdistaz($sta,dist) " "
+      }
+   }
+}
+
+proc SaveAllToFile args {
+#
+   global oktogoon
+
+   if {[llength $args] == 0} {
+   set tempsavefilename [FSBox "Select save all file:"]
+   if {$tempsavefilename == ""} {
+      unset tempsavefilename
+      return 1
+   }
+   set savefilename $tempsavefilename
+   unset tempsavefilename
+   if [file exists $savefilename] {
+      set oktogoon 0
+      while {$oktogoon != 1} {
+         ShowWindow.alert_direxists "$savefilename"
+         tkwait visibility .alert_direxists
+         grab set .alert_direxists
+         tkwait window .alert_direxists
+         if {$oktogoon == "overwrite"} {
+            set oktogoon 1
+         } elseif {$oktogoon == "rename"} {
+            set tempsavefilename [FSBox "Select save all file:"]
+            if {$tempsavefilename == ""} {
+               unset tempsavefilename
+               unset oktogoon
+               return 1
+            } else {set savefilename $tempsavefilename}
+         } elseif {$oktogoon == "cancel"} {
+            unset oktogoon
+            return 1
+         }
+      }
+   }
+   } else {
+      set savefilename [lindex $args 0]
+      
+   }
+   set f [open $savefilename w]
+
+   foreach varname [lsort [info globals]] {
+     if [string match {tk_*} $varname] { continue }
+     if [string match {tkPriv*} $varname] { continue }
+     if [string match {tcl_*} $varname] { continue }
+     if [string match {fs*} $varname] { continue }
+     if [string match {xf*} $varname] { continue }
+     if [string match {average_*} $varname] { continue }
+     if [string match {checkvar_*} $varname] { continue }
+     if {[lsearch {auto_execok auto_load auto_mkindex auto_oldpath auto_reset auto_execs auto_index auto_path} $varname] != -1} { continue }
+     if {[lsearch { InitGlobals PreloadPixmaps autoLoadList moduleList internalAliasList preloadList symbolicName } $varname] != -1} { continue }
+     if {[lsearch { button checkbutton entry frame label listbox menu menubutton message radiobutton scrollbar scale text toplevel argc argv destroy env errorCode errorInfo exit parray postedMenu selectedButton tkVersion tkerror unknown } $varname] != -1} { continue }
+     if {[lsearch {argv0 any_spawn_id spawn_id error_spawn_id exp_exec_library exp_library expect_library oktogoon timeout tty_spawn_id user_spawn_id} $varname] != -1} { continue }
+     if {[lsearch {sta gradientyn templayerfocus forkyn paragonspawn_id connected localdirtail reallocaldirtail sourcefile runmessage} $varname] != -1} { continue }
+     if {[lsearch {runinprogress showgradtext showefttext} $varname] != -1} { continue }
+     if {[lsearch {stoprunmul localmachinename localprompt totalnodes maxwantednodes minwantednodes remotedir remotemachinename remoteprompt maxruntime poissonratio} $varname] != -1} { continue }
+
+      if {"[string trim $varname]" != ""} {
+         global $varname
+         puts $f "global \{$varname\}"
+         if [array exists $varname] {
+            set i ""
+            foreach i [lsort [array names $varname]] {
+               set temp ""
+               set arrayname "${varname}(${i})"
+               puts $f "set \{$arrayname\} \{[set $arrayname]\}"
+            }
+            unset i
+         } else {
+            puts $f "set \{$varname\} \{[set $varname]\}"
+         }
+      }
+   }
+   close $f
+}
+
+proc SaveLayerToFile args {
+#
+   global oktogoon
+
+   if {[llength $args] == 0} {
+   set tempsavefilename [FSBox "Select save layer file:"]
+   if {$tempsavefilename == ""} {
+      unset tempsavefilename
+      return 1
+   }
+   set savefilename $tempsavefilename
+   unset tempsavefilename
+   if [file exists $savefilename] {
+      set oktogoon 0
+      while {$oktogoon != 1} {
+         ShowWindow.alert_direxists "$savefilename"
+         tkwait visibility .alert_direxists
+         grab set .alert_direxists
+         tkwait window .alert_direxists
+         if {$oktogoon == "overwrite"} {
+            set oktogoon 1
+         } elseif {$oktogoon == "rename"} {
+            set tempsavefilename [FSBox "Select save layer file:"]
+            if {$tempsavefilename == ""} {
+               unset tempsavefilename
+               unset oktogoon
+               return 1
+            } else {set savefilename $tempsavefilename}
+         } elseif {$oktogoon == "cancel"} {
+            unset oktogoon
+            return 1
+         }
+      }
+   }
+   } else {
+      set savefilename [lindex $args 0]
+      
+   }
+   set f [open $savefilename w]
+
+   global numlayers
+   puts $f "global numlayers"
+   puts $f "set numlayers $numlayers"
+   global layer
+   puts $f "global layer"
+   foreach i [lsort [array names layer]] {
+      set arrayname "layer(${i})"
+      puts $f "set \{$arrayname\} \{[set $arrayname]\}"
+   }
+   unset i
+   close $f
+}
+
+proc SaveModelFile {} {
+   global codetype
+   global numlayers
+   global lowcut lowpass highpass highcut controlfac
+   global fmin fmax fnyquist numtimepoints
+   global distance azimuth
+   global rmindist rdeltadist numrdist
+   global rdistances
+   global numsources
+   global sourcedepth
+   global receiverdepth
+   global mtarray
+   global layer
+   global plowcorner phighcorner slowcorner shighcorner
+   global oktogoon
+#
+   set tempmodelfilename [FSBox "Select save model file:"]
+   if {$tempmodelfilename == ""} {
+      unset tempmodelfilename
+      return 1
+   }
+   set modelfilename $tempmodelfilename
+   unset tempmodelfilename
+   if [file exists $modelfilename] {
+      set oktogoon 0
+      while {$oktogoon != 1} {
+         ShowWindow.alert_direxists "$modelfilename"
+         tkwait visibility .alert_direxists
+         grab set .alert_direxists
+         tkwait window .alert_direxists
+         if {$oktogoon == "overwrite"} {
+            set oktogoon 1
+         } elseif {$oktogoon == "rename"} {
+            set tempmodelfilename [FSBox "Select save model file:"]
+            if {$tempmodelfilename == ""} {
+               unset tempmodelfilename
+               unset oktogoon
+               return 1
+            } else {set modelfilename $tempmodelfilename}
+         } elseif {$oktogoon == "cancel"} {
+            unset oktogoon
+            return 1
+         }
+      }
+   }
+   set f [open $modelfilename w]
+   puts $f $numlayers
+   for {set i 1} { $i <= $numlayers } {incr i} {
+      puts -nonewline $f "$layer($i,thickness) $layer($i,vp) $layer($i,vs) "
+      puts -nonewline $f "$layer($i,rho) $layer($i,qp) $layer($i,qs) "
+      puts -nonewline $f "$plowcorner $phighcorner "
+      puts $f "$slowcorner $shighcorner"
+   }
+#   Slowness Parameters
+   puts $f "$lowcut $lowpass $highpass $highcut $controlfac"
+#   Frequency Parameters
+   puts $f "$fmin $fmax $fnyquist $numtimepoints"
+#   Receiver Distance and Azimuth Parameters
+   puts $f "$distance $azimuth"
+   if {$distance == 0} {
+      puts $f "$rmindist $rdeltadist $numrdist"
+   } elseif {$distance < 0} {
+      puts $f "$numrdist"
+      puts $f "$rdistances"
+   }
+# This is apparently not implemented yet in mgenkennett
+# so just put sourcedepth for each codetype.
+#########################################################
+# Number of Sources ( mgenkennett only)
+#   if {[string compare $codetype "mgenkennett"] == 0} {
+#      puts $f "$numsources"
+#   } elseif {[string compare $codetype "mijfkkennett"] == 0} {
+#      send_error "Fix this for mijfkkennett"
+#   }
+# Source depth(s)
+#   if {[string compare $codetype "mgenkennett"] == 0} {
+#      for {set i 0} {$i < $numsources} {incr i} {
+#         puts $f "$sourcedeptharray($i) "
+#      }
+#   } elseif {[string compare $codetype "mijfkkennett"] == 0} {
+#      send_error "Fix this for mijfkkennett"
+#   } elseif  {[string compare $codetype "mijkennett"] == 0} {
+      puts $f "$sourcedepth"
+#   }
+#########################################################
+
+# Receiver depth
+   puts $f "$receiverdepth"
+# Moment Tensor Components
+   if {[string compare $codetype "mgenkennett"] == 0} {
+      puts $f "$mtarray(xx) $mtarray(xy) $mtarray(xz) $mtarray(yy) $mtarray(yz) $mtarray(zz)"
+   }
+close $f
+}

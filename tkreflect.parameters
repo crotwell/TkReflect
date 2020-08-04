@@ -1,0 +1,705 @@
+
+proc Resetstalist {} {
+  global arraystanames
+  global stalist
+
+  foreach sta $arraystanames {
+    global "checkvar_${sta}_yn"
+    set stavarname "checkvar_${sta}_yn"
+    if {[set $stavarname] == 1} { 
+       if {[lsearch $stalist $sta] == -1} { 
+          lappend stalist $sta 
+       }
+    } else {
+       set i [lsearch $stalist $sta]
+       if {$i != -1} { 
+          set stalist [lreplace $stalist $i $i]
+       }
+    }
+  }
+}
+
+
+proc ResetStaCheckBoxes {} {
+  global arraystanames
+  global stalist
+
+  foreach sta $arraystanames {
+     global checkvar_${sta}_yn
+     set checkvar_${sta}_yn 0 
+  }
+  foreach sta $stalist { set checkvar_${sta}_yn 1 }
+}
+
+# procedure to show window .parameters
+proc ShowWindow.parameters {args} {# xf ignore me 7
+
+  global codetype
+  global typedistance
+  global evtdistaz stalatlon
+  global stalist arraystanames
+  global numrdist rdistances
+
+  # build widget .parameters
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .parameters"
+  } {
+    catch "destroy .parameters"
+  }
+  toplevel .parameters  \
+    -relief {raised}
+
+  # Window manager configurations
+  global tkVersion
+  wm positionfrom .parameters ""
+  wm sizefrom .parameters ""
+  wm title .parameters {Define Other Parameters}
+
+
+  frame .parameters.slowness \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.slowness.label_lowcut \
+    -text {Low Cut} \
+    -width {10}
+
+  label .parameters.slowness.label_lowpass \
+    -text {Low Pass} \
+    -width {10}
+
+  label .parameters.slowness.label_highcut \
+    -text {High Cut} \
+    -width {10}
+
+  label .parameters.slowness.label_controlfac \
+    -text {Control Fac} \
+    -width {10}
+
+  label .parameters.slowness.label_highpass \
+    -text {High Pass} \
+    -width {10}
+
+  pack append .parameters.slowness \
+    .parameters.slowness.label_lowcut {left frame center} \
+    .parameters.slowness.label_lowpass {left frame center} \
+    .parameters.slowness.label_highpass {left frame center} \
+    .parameters.slowness.label_highcut {left frame center} \
+    .parameters.slowness.label_controlfac {left frame center}
+
+  frame .parameters.slowness2 \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.slowness2.entry_lowcut \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {lowcut} \
+    -width {10}
+
+  entry .parameters.slowness2.entry_lowpass \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {lowpass} \
+    -width {10}
+
+  entry .parameters.slowness2.entry_highpass \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {highpass} \
+    -width {10}
+
+  entry .parameters.slowness2.entry_highcut \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {highcut} \
+    -width {10}
+
+  entry .parameters.slowness2.entry_controlfac \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {controlfac} \
+    -width {10}
+
+  pack append .parameters.slowness2 \
+    .parameters.slowness2.entry_lowcut {left frame w} \
+    .parameters.slowness2.entry_lowpass {left frame center} \
+    .parameters.slowness2.entry_highpass {left frame center} \
+    .parameters.slowness2.entry_highcut {left frame center} \
+    .parameters.slowness2.entry_controlfac {left frame center}
+
+  frame .parameters.frame_freq \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_freq.label_fmin \
+    -text {Min} \
+    -width {10}
+
+  label .parameters.frame_freq.label_fmax \
+    -text {Max} \
+    -width {10}
+
+  label .parameters.frame_freq.label_nyquist \
+    -text {Nyquest} \
+    -width {10}
+
+  label .parameters.frame_freq.label_numtpts \
+    -text {Num Time Points}
+
+  pack append .parameters.frame_freq \
+    .parameters.frame_freq.label_fmin {left frame center} \
+    .parameters.frame_freq.label_fmax {left frame center} \
+    .parameters.frame_freq.label_nyquist {left frame center} \
+    .parameters.frame_freq.label_numtpts {left frame center}
+
+  label .parameters.label_freq \
+    -text {Frequency}
+
+  frame .parameters.frequency \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.frequency.entry_fmin \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {fmin} \
+    -width {10}
+
+  entry .parameters.frequency.entry_fmax \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {fmax} \
+    -width {10}
+
+  entry .parameters.frequency.entry_highpass \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {fnyquist} \
+    -width {10}
+
+  entry .parameters.frequency.entry_highcut \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {numtimepoints} \
+    -width {10}
+
+  pack append .parameters.frequency \
+    .parameters.frequency.entry_fmin {left frame w} \
+    .parameters.frequency.entry_fmax {left frame center} \
+    .parameters.frequency.entry_highpass {left frame center} \
+    .parameters.frequency.entry_highcut {left frame center}
+
+  label .parameters.label_slowness \
+    -text {Slowness}
+
+  frame .parameters.recvr \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.recvr.label_receiver \
+    -text {Receiver}
+
+  frame .parameters.recvr.frame_receiver \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.recvr.frame_receiver.entry_distance \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {distance} \
+    -width {10}
+
+  entry .parameters.recvr.frame_receiver.entry_azimuth \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {azimuth} \
+    -width {10}
+
+  pack append .parameters.recvr.frame_receiver \
+    .parameters.recvr.frame_receiver.entry_distance {left frame center} \
+    .parameters.recvr.frame_receiver.entry_azimuth {left frame center}
+
+  frame .parameters.recvr.frame_receiverl \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.recvr.frame_receiverl.label_distance \
+    -text {Distance} \
+    -width {10}
+
+  label .parameters.recvr.frame_receiverl.label_azimuth \
+    -text {Azimuth} \
+    -width {10}
+
+  pack append .parameters.recvr.frame_receiverl \
+    .parameters.recvr.frame_receiverl.label_distance {left frame w} \
+    .parameters.recvr.frame_receiverl.label_azimuth {top frame center}
+
+  frame .parameters.recvr.typedistance \
+    -borderwidth {2} \
+    -relief {flat}
+ 
+  radiobutton .parameters.recvr.typedistance.single \
+    -command {
+       set distance $singledistance
+       pack forget .parameters.frame_ranges
+       pack forget .parameters.frame_rangese
+       pack forget .parameters.frame_stations
+       pack forget .parameters.frame_revenspacel
+       pack forget .parameters.frame_revenspace } \
+    -text {Single Receiver  } \
+    -value {single} \
+    -variable {typedistance} \
+    -width {15}
+ 
+  radiobutton .parameters.recvr.typedistance.regular \
+    -command {
+       if {$distance>0} {
+          set singledistance $distance
+       }
+       set distance 0.0
+       pack .parameters.frame_revenspacel \
+          .parameters.frame_revenspace \
+          -after .parameters.recvr -anchor w
+       pack forget .parameters.frame_ranges
+       pack forget .parameters.frame_stations
+       pack forget .parameters.frame_rangese } \
+    -text {Regular Spacing } \
+    -value {regular} \
+    -variable {typedistance} \
+    -width {15}
+ 
+  radiobutton .parameters.recvr.typedistance.irregular \
+    -command {
+       if {$distance>0} {
+          set singledistance $distance
+       }
+       set distance -1.0
+       pack .parameters.frame_ranges \
+         .parameters.frame_rangese \
+          -after .parameters.recvr -anchor w -fill x
+       pack forget .parameters.frame_revenspacel
+       pack forget .parameters.frame_stations
+       pack forget .parameters.frame_revenspace } \
+    -text {Irregular Spacing} \
+    -value {irregular} \
+    -variable {typedistance} \
+    -width {15}
+ 
+  radiobutton .parameters.recvr.typedistance.irregArray \
+    -command {
+       CalcArrayDistAz
+       pack .parameters.frame_ranges \
+         .parameters.frame_rangese \
+          -after .parameters.recvr -anchor w -fill x
+       pack .parameters.frame_stations \
+          -after .parameters.frame_rangese -anchor w -fill x
+       pack forget .parameters.frame_revenspacel
+       pack forget .parameters.frame_revenspace
+       ResetStaCheckBoxes
+       MakeArraySpacing
+    } \
+    -text {Array Spacing    } \
+    -value {irregArray} \
+    -variable {typedistance} \
+    -width {15}
+ 
+  pack append .parameters.recvr.typedistance \
+    .parameters.recvr.typedistance.single {top frame center} \
+    .parameters.recvr.typedistance.regular {top frame center} \
+    .parameters.recvr.typedistance.irregular {top frame center} \
+    .parameters.recvr.typedistance.irregArray {top frame center}
+ 
+  pack append .parameters.recvr \
+       .parameters.recvr.typedistance {left frame center} \
+       .parameters.recvr.label_receiver {top frame w} \
+       .parameters.recvr.frame_receiverl {top frame w} \
+       .parameters.recvr.frame_receiver {top frame w}
+
+###
+
+  frame .parameters.frame_ranges \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_ranges.rdistances \
+    -text {Receiver Distances}
+
+  label .parameters.frame_ranges.label_numreceivers \
+    -text {Number}
+
+  pack append .parameters.frame_ranges \
+    .parameters.frame_ranges.label_numreceivers {left frame center} \
+    .parameters.frame_ranges.rdistances {top frame center fillx}
+
+###
+
+  frame .parameters.frame_rangese \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.frame_rangese.entry_numrdist \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {numrdist} \
+    -width {10}
+
+  entry .parameters.frame_rangese.entry_rdistances \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {rdistances}
+
+  pack append .parameters.frame_rangese \
+    .parameters.frame_rangese.entry_numrdist {left frame center} \
+    .parameters.frame_rangese.entry_rdistances {right frame center expand fillx}
+
+###
+
+  frame .parameters.frame_stations \
+    -borderwidth {2}
+
+  CalcArrayDistAz
+  for {set i 0} {$i < [llength $arraystanames]} {incr i} {
+    if {[expr $i % 3 == 0]} {
+       set framename "sta$i"
+       frame ".parameters.frame_stations.$framename" -borderwidth {2}
+       pack append .parameters.frame_stations \
+          ".parameters.frame_stations.${framename}" \
+          {top frame w}
+    }
+    set sta [lindex $arraystanames $i]
+    checkbutton \
+       ".parameters.frame_stations.${framename}.[lindex $arraystanames $i]" \
+       -text "$sta $evtdistaz($sta,dist) $evtdistaz($sta,az)" \
+       -variable "checkvar_[lindex $arraystanames $i]_yn" \
+       -command {
+          Resetstalist
+          MakeArraySpacing
+       } \
+       -width {15}
+
+    pack append ".parameters.frame_stations.${framename}" \
+        ".parameters.frame_stations.${framename}.[lindex $arraystanames $i]" \
+        {left frame center}
+  }
+  unset sta
+###
+
+  frame .parameters.frame_revenspacel \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_revenspacel.label_rmindist \
+    -text {Minimum} \
+    -width {10}
+
+  label .parameters.frame_revenspacel.label_rdeltadist \
+    -text {Delta} \
+    -width {10}
+
+  label .parameters.frame_revenspacel.label_numrdist \
+    -text {Number} \
+    -width {10}
+
+  pack append .parameters.frame_revenspacel \
+    .parameters.frame_revenspacel.label_rmindist {left frame center} \
+    .parameters.frame_revenspacel.label_rdeltadist {left frame center} \
+    .parameters.frame_revenspacel.label_numrdist {left frame center}
+
+###
+
+  frame .parameters.frame_revenspace \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.frame_revenspace.entry_rmindist \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {rmindist} \
+    -width {10}
+
+  entry .parameters.frame_revenspace.entry_rdeltadist \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {rdeltadist} \
+    -width {10}
+
+  entry .parameters.frame_revenspace.entry_numrdist \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {numrdist} \
+    -width {10}
+
+  pack append .parameters.frame_revenspace \
+    .parameters.frame_revenspace.entry_rmindist {left frame center} \
+    .parameters.frame_revenspace.entry_rdeltadist {left frame center} \
+    .parameters.frame_revenspace.entry_numrdist {left frame center}
+
+###
+
+  label .parameters.label_numsources \
+    -text {Sources}
+
+  frame .parameters.frame_sources \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_sources.label_num \
+    -text {Number} \
+    -width {10}
+
+  label .parameters.frame_sources.label_depth \
+    -text {Depth} \
+    -width {10}
+
+  label .parameters.frame_sources.label_lat \
+    -text {Event Lat} \
+    -width {10}
+
+  label .parameters.frame_sources.label_lon \
+    -text {Event Long} \
+    -width {10}
+
+  pack append .parameters.frame_sources \
+    .parameters.frame_sources.label_num {left frame center} \
+    .parameters.frame_sources.label_depth {left frame center} \
+    .parameters.frame_sources.label_lat {left frame center} \
+    .parameters.frame_sources.label_lon {left frame center}
+
+  frame .parameters.frame_sourcese \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.frame_sourcese.entry_num \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {numsources} \
+    -width {10}
+
+  entry .parameters.frame_sourcese.entry_depths \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {sourcedepth} \
+    -width {10}
+
+  entry .parameters.frame_sourcese.entry_lat \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {sourcelat} \
+    -width {10}
+
+  entry .parameters.frame_sourcese.entry_lon \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {sourcelon} \
+    -width {10}
+
+  pack append .parameters.frame_sourcese \
+    .parameters.frame_sourcese.entry_num {left frame center} \
+    .parameters.frame_sourcese.entry_depths {left frame center} \
+    .parameters.frame_sourcese.entry_lat {left frame center} \
+    .parameters.frame_sourcese.entry_lon {left frame center}
+
+  checkbutton .parameters.flatsource \
+     -text {Flatten Source Depth} \
+     -variable {flatsourcedepth}
+
+  label .parameters.label_mt \
+    -text {Moment Tensor}
+
+  frame .parameters.frame_mtl \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_mtl.label_mxx \
+    -text {Mxx} \
+    -width {8}
+
+  label .parameters.frame_mtl.label_mxy \
+    -text {Mxy} \
+    -width {8}
+
+  label .parameters.frame_mtl.label_mxz \
+    -text {Mxz} \
+    -width {8}
+
+  label .parameters.frame_mtl.label_myy \
+    -text {Myy} \
+    -width {8}
+
+  label .parameters.frame_mtl.label_myz \
+    -text {Myz} \
+    -width {8}
+
+  label .parameters.frame_mtl.label_mzz \
+    -text {Mzz} \
+    -width {8}
+
+  pack append .parameters.frame_mtl \
+    .parameters.frame_mtl.label_mxx {left frame center} \
+    .parameters.frame_mtl.label_mxy {left frame center} \
+    .parameters.frame_mtl.label_mxz {left frame center} \
+    .parameters.frame_mtl.label_myy {left frame center} \
+    .parameters.frame_mtl.label_myz {left frame center} \
+    .parameters.frame_mtl.label_mzz {left frame center}
+
+  frame .parameters.frame_mte \
+    -borderwidth {2} \
+    -relief {raised}
+
+  entry .parameters.frame_mte.entry_mxx \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {mtarray(xx)} \
+    -width {8}
+
+  entry .parameters.frame_mte.entry_mxy \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {mtarray(xy)} \
+    -width {8}
+
+  entry .parameters.frame_mte.entry_mxz \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {mtarray(xz)} \
+    -width {8}
+
+  entry .parameters.frame_mte.entry_myy \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {mtarray(yy)} \
+    -width {8}
+
+  entry .parameters.frame_mte.entry_myz \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {mtarray(yz)} \
+    -width {8}
+
+  entry .parameters.frame_mte.entry_mzz \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {mtarray(zz)} \
+    -width {8}
+
+  pack append .parameters.frame_mte \
+    .parameters.frame_mte.entry_mxx {left frame center} \
+    .parameters.frame_mte.entry_mxy {left frame center} \
+    .parameters.frame_mte.entry_mxz {left frame center} \
+    .parameters.frame_mte.entry_myy {left frame center} \
+    .parameters.frame_mte.entry_myz {left frame center} \
+    .parameters.frame_mte.entry_mzz {left frame center}
+
+  frame .parameters.frame_recdepth \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_recdepth.label_recdepth \
+    -text {Receiver Depth}
+
+  entry .parameters.frame_recdepth.entry_recdepth \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {receiverdepth} \
+    -width {10}
+
+  pack append .parameters.frame_recdepth \
+    .parameters.frame_recdepth.label_recdepth {left frame nw} \
+    .parameters.frame_recdepth.entry_recdepth {left frame center}
+
+  checkbutton .parameters.flatreceiver \
+     -text {Flatten Receiver Depth} \
+     -variable {flatreceiverdepth}
+
+  frame .parameters.frame_diffparam \
+    -borderwidth {2} \
+    -relief {raised}
+
+  label .parameters.frame_diffparam.label_diffparam \
+    -text {Differentials Parameter}
+
+  entry .parameters.frame_diffparam.entry_diffparam \
+    -borderwidth {3} \
+    -relief {sunken} \
+    -textvariable {diffparam} \
+    -width {10}
+
+  pack append .parameters.frame_diffparam \
+    .parameters.frame_diffparam.label_diffparam {left frame nw} \
+    .parameters.frame_diffparam.entry_diffparam {left frame center}
+
+  button .parameters.closeOtherParameters \
+    -command {DestroyWindow.parameters} \
+    -state {active} \
+    -text {Close}
+
+  pack append .parameters \
+    .parameters.label_slowness {top frame w pady 3} \
+    .parameters.slowness {top frame w} \
+    .parameters.slowness2 {top frame w} \
+    .parameters.label_freq {top frame w pady 4} \
+    .parameters.frame_freq {top frame w} \
+    .parameters.frequency {top frame w} \
+    .parameters.recvr {top frame w fillx} \
+    .parameters.label_numsources {top frame w} \
+    .parameters.frame_sources {top frame w fillx} \
+    .parameters.frame_sourcese {top frame w fillx} \
+    .parameters.flatsource {top frame w } \
+    .parameters.frame_recdepth {top frame w pady 4} \
+    .parameters.flatreceiver {top frame w } \
+    .parameters.closeOtherParameters {bottom frame e}
+
+  if {[string compare $codetype mgenkennett] == 0 || [string compare $codetype diffkennett] == 0} {
+     pack \
+       .parameters.label_mt \
+       .parameters.frame_mtl \
+       .parameters.frame_mte \
+       -anchor w -after .parameters.flatreceiver
+  }
+
+  if {[string compare $codetype diffkennett] == 0} {
+     pack \
+       .parameters.frame_diffparam \
+       -anchor w -after .parameters.frame_mte
+  }
+
+  if {[string compare $typedistance "regular"]==0} {
+    pack .parameters.frame_revenspacel \
+       .parameters.frame_revenspace \
+       -anchor w -after .parameters.recvr
+  } elseif {[string compare $typedistance "irregular"]==0} {
+    pack .parameters.frame_ranges \
+       .parameters.frame_rangese \
+       -anchor w -after .parameters.recvr -fill x
+  } elseif {[string compare $typedistance "irregArray"]==0} {
+       pack .parameters.frame_ranges \
+         .parameters.frame_rangese \
+          -after .parameters.recvr -anchor w -fill x
+       pack .parameters.frame_stations \
+          -after .parameters.frame_rangese -anchor w -fill x
+       pack forget .parameters.frame_revenspacel
+       pack forget .parameters.frame_revenspace
+       ResetStaCheckBoxes
+  }
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree .parameters"
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+proc DestroyWindow.parameters {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .parameters]" != ""} {
+      global xfShowWindow.parameters
+      set xfShowWindow.parameters 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .parameters; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .parameters"
+    update
+  }
+}

@@ -1,0 +1,326 @@
+# procedure to show window .machineoptions
+proc ShowWindow.machineoptions {args} {# xf ignore me 7
+
+  # build widget .machineoptions
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .machineoptions"
+  } {
+    catch "destroy .machineoptions"
+  }
+  toplevel .machineoptions  \
+    -relief {raised}
+
+  # Window manager configurations
+  global tkVersion
+  wm positionfrom .machineoptions program
+  wm sizefrom .machineoptions program
+  wm title .machineoptions {Define Machine Parameters}
+
+
+  frame .machineoptions.remotemachine \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.remotemachine.frame
+
+  scrollbar .machineoptions.remotemachine.frame.scrollbar1 \
+    -command {.machineoptions.remotemachine.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.remotemachine.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.remotemachine.frame.scrollbar1 set} \
+    -textvariable {remotemachinename}
+
+  pack append .machineoptions.remotemachine.frame \
+    .machineoptions.remotemachine.frame.entry2 {top frame center expand fill} \
+    .machineoptions.remotemachine.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.remotemachine.label1 \
+    -text {Remote Machine:}
+
+  pack append .machineoptions.remotemachine \
+    .machineoptions.remotemachine.label1 {left frame center filly} \
+    .machineoptions.remotemachine.frame {top frame center fillx}
+
+  frame .machineoptions.localmachine \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.localmachine.frame
+
+  scrollbar .machineoptions.localmachine.frame.scrollbar1 \
+    -command {.machineoptions.localmachine.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.localmachine.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.localmachine.frame.scrollbar1 set} \
+    -textvariable {localmachinename}
+
+  pack append .machineoptions.localmachine.frame \
+    .machineoptions.localmachine.frame.entry2 {top frame center expand fill} \
+    .machineoptions.localmachine.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.localmachine.label1 \
+    -text {Local Machine:}
+
+  pack append .machineoptions.localmachine \
+    .machineoptions.localmachine.label1 {left frame center filly} \
+    .machineoptions.localmachine.frame {top frame center fillx}
+
+  frame .machineoptions.totalnodes \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.totalnodes.frame
+
+  scrollbar .machineoptions.totalnodes.frame.scrollbar1 \
+    -command {.machineoptions.totalnodes.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.totalnodes.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.totalnodes.frame.scrollbar1 set} \
+    -textvariable {totalnodes}
+
+  pack append .machineoptions.totalnodes.frame \
+    .machineoptions.totalnodes.frame.entry2 {top frame center expand fill} \
+    .machineoptions.totalnodes.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.totalnodes.label1 \
+    -text {Total Nodes:}
+
+  pack append .machineoptions.totalnodes \
+    .machineoptions.totalnodes.label1 {left frame center filly} \
+    .machineoptions.totalnodes.frame {top frame center fillx}
+
+  frame .machineoptions.maxwantednodes \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.maxwantednodes.frame
+
+  scrollbar .machineoptions.maxwantednodes.frame.scrollbar1 \
+    -command {.machineoptions.maxwantednodes.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.maxwantednodes.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.maxwantednodes.frame.scrollbar1 set} \
+    -textvariable {maxwantednodes}
+
+  pack append .machineoptions.maxwantednodes.frame \
+    .machineoptions.maxwantednodes.frame.entry2 {top frame center expand fill} \
+    .machineoptions.maxwantednodes.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.maxwantednodes.label1 \
+    -text {Maximum Number of Nodes Wanted:}
+
+  pack append .machineoptions.maxwantednodes \
+    .machineoptions.maxwantednodes.label1 {left frame center filly} \
+    .machineoptions.maxwantednodes.frame {top frame center fillx}
+
+  frame .machineoptions.minwantednodes \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.minwantednodes.frame
+
+  scrollbar .machineoptions.minwantednodes.frame.scrollbar1 \
+    -command {.machineoptions.minwantednodes.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.minwantednodes.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.minwantednodes.frame.scrollbar1 set} \
+    -textvariable {minwantednodes}
+
+  pack append .machineoptions.minwantednodes.frame \
+    .machineoptions.minwantednodes.frame.entry2 {top frame center expand fill} \
+    .machineoptions.minwantednodes.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.minwantednodes.label1 \
+    -text {Minimum Number of Nodes Wanted:}
+
+  pack append .machineoptions.minwantednodes \
+    .machineoptions.minwantednodes.label1 {left frame center filly} \
+    .machineoptions.minwantednodes.frame {top frame center fillx}
+
+  frame .machineoptions.remoteprompt \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.remoteprompt.frame
+
+  scrollbar .machineoptions.remoteprompt.frame.scrollbar1 \
+    -command {.machineoptions.remoteprompt.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.remoteprompt.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.remoteprompt.frame.scrollbar1 set} \
+    -textvariable {remoteprompt}
+
+  pack append .machineoptions.remoteprompt.frame \
+    .machineoptions.remoteprompt.frame.entry2 {top frame center expand fill} \
+    .machineoptions.remoteprompt.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.remoteprompt.label1 \
+    -text {Remote Prompt (reg exp):}
+
+  pack append .machineoptions.remoteprompt \
+    .machineoptions.remoteprompt.label1 {left frame center filly} \
+    .machineoptions.remoteprompt.frame {top frame center fillx}
+
+  frame .machineoptions.localprompt \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.localprompt.frame
+
+  scrollbar .machineoptions.localprompt.frame.scrollbar1 \
+    -command {.machineoptions.localprompt.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.localprompt.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.localprompt.frame.scrollbar1 set} \
+    -textvariable {localprompt}
+
+  pack append .machineoptions.localprompt.frame \
+    .machineoptions.localprompt.frame.entry2 {top frame center expand fill} \
+    .machineoptions.localprompt.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.localprompt.label1 \
+    -text {Local Prompt (reg exp):}
+
+  pack append .machineoptions.localprompt \
+    .machineoptions.localprompt.label1 {left frame center filly} \
+    .machineoptions.localprompt.frame {top frame center fillx}
+
+  frame .machineoptions.localdir \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.localdir.frame
+
+  scrollbar .machineoptions.localdir.frame.scrollbar1 \
+    -command {.machineoptions.localdir.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.localdir.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.localdir.frame.scrollbar1 set} \
+    -textvariable {localdir}
+
+  pack append .machineoptions.localdir.frame \
+    .machineoptions.localdir.frame.entry2 {top frame center expand fill} \
+    .machineoptions.localdir.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.localdir.label1 \
+    -text {Local Dir:}
+
+  pack append .machineoptions.localdir \
+    .machineoptions.localdir.label1 {left frame center filly} \
+    .machineoptions.localdir.frame {top frame center fillx}
+
+  frame .machineoptions.remotedir \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.remotedir.frame
+
+  scrollbar .machineoptions.remotedir.frame.scrollbar1 \
+    -command {.machineoptions.remotedir.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.remotedir.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.remotedir.frame.scrollbar1 set} \
+    -textvariable {remotedir}
+
+  pack append .machineoptions.remotedir.frame \
+    .machineoptions.remotedir.frame.entry2 {top frame center expand fill} \
+    .machineoptions.remotedir.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.remotedir.label1 \
+    -text {Remote Dir:}
+
+  pack append .machineoptions.remotedir \
+    .machineoptions.remotedir.label1 {left frame center filly} \
+    .machineoptions.remotedir.frame {top frame center fillx}
+
+  frame .machineoptions.localp4machines \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .machineoptions.localp4machines.frame
+
+  scrollbar .machineoptions.localp4machines.frame.scrollbar1 \
+    -command {.machineoptions.localp4machines.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .machineoptions.localp4machines.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.machineoptions.localp4machines.frame.scrollbar1 set} \
+    -textvariable {localp4machines}
+
+  pack append .machineoptions.localp4machines.frame \
+    .machineoptions.localp4machines.frame.entry2 {top frame center expand fill} \
+    .machineoptions.localp4machines.frame.scrollbar1 {top frame center fillx}
+
+  label .machineoptions.localp4machines.label1 \
+    -text {Local P4 Machines}
+
+  pack append .machineoptions.localp4machines \
+    .machineoptions.localp4machines.label1 {left frame center filly} \
+    .machineoptions.localp4machines.frame {top frame center fillx}
+
+  button .machineoptions.closeMachineOptions \
+    -command {DestroyWindow.machineoptions} \
+    -state {active} \
+    -text {Close}
+
+  pack append .machineoptions \
+    .machineoptions.remotemachine {top frame center fill} \
+    .machineoptions.localmachine {top frame center fill} \
+    .machineoptions.remoteprompt {top frame center fill} \
+    .machineoptions.localprompt {top frame center fill} \
+    .machineoptions.remotedir {top frame center fill} \
+    .machineoptions.localdir {top frame center fill} \
+    .machineoptions.totalnodes {top frame center fill} \
+    .machineoptions.maxwantednodes {top frame center fill} \
+    .machineoptions.minwantednodes {top frame center fill} \
+    .machineoptions.localp4machines {top frame center fill} \
+    .machineoptions.closeMachineOptions {right frame e}
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree .machineoptions"
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+proc DestroyWindow.machineoptions {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .machineoptions]" != ""} {
+      global xfShowWindow.machineoptions
+      set xfShowWindow.machineoptions 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .machineoptions; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .machineoptions"
+    update
+  }
+}

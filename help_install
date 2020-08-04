@@ -1,0 +1,50 @@
+
+Hi
+
+Here it is. I have a feeling that it will take a couple of trys to get it to
+work for someone other than me! There is an old 'help' file that has some 
+information in it but it is somewhat out of date. 
+
+Here is what you need to have/change in order to get it going, or at least
+everything I can think of now!
+
+* You need Tcl, Tk and Expect installed. I'm using tcl 7.3,
+tk 3.6 and expect 5.16. Earlier versions should be ok (maybe???) and 
+I will migrate to tk 4.0 eventually.
+
+* Each of the tkreflect.blaa files needs to be in the current directory, the
+directory specified in tkreflect_sourcedir which is set in each users
+.tkreflectrc file, ~/bin, or /usr/local/bin. I put all of these files in
+/usr/local/Internal/TkReflect on our machine and 
+
+global {tkreflect_sourcedir}
+set tkreflect_sourcedir {/usr/local/Internal/TkReflect}
+
+in my ~/.tkreflectrc. Also, the file tkreflect needs to be somewhere in your 
+path, usually /usr/local/bin, and have execute permission.
+
+* Lastly, you need George Randall's codes in your path. I use mijkennett, 
+mijfkkennett, mgenkennett, spec2zrt, gfcombine, bincnvrt 
+(for paragon only), and mmarktime. spec2zrt is a modified version of tsynth 
+(Randall) that allows a -zu for z positive up and -zd for z positive down.
+mmarktime is a modified version of marktime (Chuck Ammon) to use
+Randall's naming convention. It isn't of much use for complicated structures
+as there are "arrivals" before the first arrival that don't have any significant
+energy...or something like that. It needs libsac.a when (if) you compile it.
+You don't need to compile it if you don't want to, just don't use the mmarktime 
+option under postrunopts.
+
+One last thing, I am not completely sure that the strike, dip, slip conversions
+are correct. I know that they DON'T always follow the Aki and Richards 
+convention for vertical faults but strike/dip/slip is sort of arbitrary then
+anyway. You may want to do some testing before putting any great faith in
+the results. If you give P and T then I am relatively sure that it is doing the
+right thing, or at least look at the slip and normal vectors to see what it
+thinks is really there.
+
+Let me know if you have ideas for improvements and whether you get it to work.
+
+Have fun!
+
+Philip
+

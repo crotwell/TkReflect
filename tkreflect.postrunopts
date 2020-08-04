@@ -1,0 +1,263 @@
+# procedure to show window .postrunopts
+proc ShowWindow.postrunopts {args} {# xf ignore me 7
+
+   global tsynthredvel tsynthoffset
+
+  # build widget .postrunopts
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .postrunopts"
+  } {
+    catch "destroy .postrunopts"
+  }
+  toplevel .postrunopts 
+
+  # Window manager configurations
+  global tkVersion
+  wm title .postrunopts {postrunopts}
+
+
+  frame .postrunopts.tsynthredvel \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .postrunopts.tsynthredvel.frame
+
+  scrollbar .postrunopts.tsynthredvel.frame.scrollbar1 \
+    -command {.postrunopts.tsynthredvel.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .postrunopts.tsynthredvel.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.postrunopts.tsynthredvel.frame.scrollbar1 set} \
+    -textvariable {tsynthredvel}
+
+  pack append .postrunopts.tsynthredvel.frame \
+    .postrunopts.tsynthredvel.frame.entry2 {top frame center expand fillx} \
+    .postrunopts.tsynthredvel.frame.scrollbar1 {top frame center fillx}
+
+  label .postrunopts.tsynthredvel.label1 \
+    -text {Reducing Velocity:}
+
+  pack append .postrunopts.tsynthredvel \
+    .postrunopts.tsynthredvel.label1 {left frame center filly} \
+    .postrunopts.tsynthredvel.frame {top frame center fillx}
+
+  frame .postrunopts.tsynthoffset \
+    -borderwidth {2} \
+    -relief {raised}
+
+  frame .postrunopts.tsynthoffset.frame
+
+  scrollbar .postrunopts.tsynthoffset.frame.scrollbar1 \
+    -command {.postrunopts.tsynthoffset.frame.entry2 xview} \
+    -orient {horizontal} \
+    -width {11}
+
+  entry .postrunopts.tsynthoffset.frame.entry2 \
+    -relief {sunken} \
+    -xscrollcommand {.postrunopts.tsynthoffset.frame.scrollbar1 set} \
+    -textvariable {tsynthoffset}
+
+  pack append .postrunopts.tsynthoffset.frame \
+    .postrunopts.tsynthoffset.frame.entry2 {top frame center expand fillx} \
+    .postrunopts.tsynthoffset.frame.scrollbar1 {top frame center fillx}
+
+  label .postrunopts.tsynthoffset.label1 \
+    -text {Offset:}
+
+  pack append .postrunopts.tsynthoffset \
+    .postrunopts.tsynthoffset.label1 {left frame center filly} \
+    .postrunopts.tsynthoffset.frame {top frame center fillx}
+
+  frame .postrunopts.tsynthcb \
+    -borderwidth {2} \
+    -relief {flat}
+ 
+  frame .postrunopts.tsynthcb.frame_tsynthzupdown \
+    -borderwidth {2} \
+    -relief {raised}
+ 
+  checkbutton .postrunopts.tsynthcb.frame_tsynthzupdown.zupdown \
+    -text {Z Positive Up} \
+    -variable {zpositiveup} \
+    -width {15}
+
+  pack append .postrunopts.tsynthcb.frame_tsynthzupdown \
+    .postrunopts.tsynthcb.frame_tsynthzupdown.zupdown {}
+ 
+  frame .postrunopts.tsynthcb.frame_tsynthdorv \
+    -borderwidth {2} \
+    -relief {raised}
+ 
+  radiobutton .postrunopts.tsynthcb.frame_tsynthdorv.d \
+    -text {Displacement} \
+    -value {-d} \
+    -variable {tsynthdorv} \
+    -width {15}
+ 
+  radiobutton .postrunopts.tsynthcb.frame_tsynthdorv.v \
+    -text {Velocity    } \
+    -value {-v} \
+    -variable {tsynthdorv} \
+    -width {15}
+
+  pack append .postrunopts.tsynthcb.frame_tsynthdorv \
+    .postrunopts.tsynthcb.frame_tsynthdorv.d {top frame center} \
+    .postrunopts.tsynthcb.frame_tsynthdorv.v {top frame center}
+ 
+  frame .postrunopts.tsynthcb.frame_tsynthsori \
+    -borderwidth {2} \
+    -relief {raised}
+ 
+  radiobutton .postrunopts.tsynthcb.frame_tsynthsori.i \
+    -text {Impulse     } \
+    -value {-i} \
+    -variable {tsynthsori} \
+    -width {15}
+
+  radiobutton .postrunopts.tsynthcb.frame_tsynthsori.s \
+    -text {Step        } \
+    -value {-s} \
+    -variable {tsynthsori} \
+    -width {15}
+
+  pack append .postrunopts.tsynthcb.frame_tsynthsori \
+    .postrunopts.tsynthcb.frame_tsynthsori.s {top frame center} \
+    .postrunopts.tsynthcb.frame_tsynthsori.i {top frame center}
+ 
+  pack append .postrunopts.tsynthcb \
+    .postrunopts.tsynthcb.frame_tsynthzupdown {top frame w} \
+    .postrunopts.tsynthcb.frame_tsynthdorv {left frame center} \
+    .postrunopts.tsynthcb.frame_tsynthsori {right frame center}
+ 
+  frame .postrunopts.gfcombfr \
+    -borderwidth {2} \
+    -relief {raised}
+ 
+  checkbutton .postrunopts.gfcombfr.tsynthyn \
+    -text {Convert from Spectral File} \
+    -variable {tsynthyn} \
+    -width {23}
+ 
+  button .postrunopts.gfcombfr.tsynthnow \
+    -command {
+       set tempdir [pwd]
+       cd $localdir
+       Tsynth
+       cd $tempdir
+       unset tempdir} \
+    -text {Convert from Spectral File Now}
+ 
+  checkbutton .postrunopts.gfcombfr.marktimeyn \
+    -text {Mark Arrival Times in SAC Header} \
+    -variable {marktimeyn} \
+    -width {23}
+ 
+  button .postrunopts.gfcombfr.marktimenow \
+    -command {
+       set tempdir [pwd]
+       cd $localdir
+       MMarkTime
+       cd $tempdir
+       unset tempdir} \
+    -text {Mark SAC Times Now}
+ 
+  checkbutton .postrunopts.gfcombfr.gfcombyn \
+    -text {Combine Greens Functions using PT} \
+    -variable {gfcombineyn} \
+    -width {23}
+ 
+  checkbutton .postrunopts.gfcombfr.gfconvyn \
+    -text {Convert Greens Functions to FF} \
+    -variable {gfconvertyn} \
+    -width {23}
+ 
+  checkbutton .postrunopts.gfcombfr.gfcombcleanup \
+    -text {Clean Up after Combining} \
+    -variable {gfcombinecleanup} \
+    -width {23}
+ 
+  button .postrunopts.gfcombfr.gfcombinenow \
+    -command {
+       if {$typedistance != "irregArray"} {
+          set runmessage "Must have run using Array Spacing"
+          return
+       }
+       set temptsynthyn $tsynthyn
+       set tsynthyn 1
+       set tempdir [pwd]
+       cd $localdir
+       CalcArrayDistAz
+       GFCombine
+       set tsynthyn $temptsynthyn
+       unset temptsynthyn
+       cd $tempdir
+       unset tempdir} \
+    -text {Combine Green's Functions Now}
+
+  button .postrunopts.gfcombfr.gfconvertnow \
+    -command {
+       if {$typedistance != "irregArray"} {
+          set runmessage "Must have run using Array Spacing"
+          return
+       }
+       set temptsynthyn $tsynthyn
+       set tsynthyn 1
+       set tempdir [pwd]
+       cd $localdir
+       CalcArrayDistAz
+       GFConvert
+       set tsynthyn $temptsynthyn
+       unset temptsynthyn
+       cd $tempdir
+       unset tempdir} \
+    -text {Convert Green's Functions Now}
+ 
+  button .postrunopts.gfcombfr.cvtomij \
+    -command {ShowWindow.moment} \
+    -text {Convert to Moment Tensor...}
+ 
+  pack append .postrunopts.gfcombfr \
+    .postrunopts.gfcombfr.tsynthyn {top frame center expand fillx} \
+    .postrunopts.gfcombfr.tsynthnow {top frame center expand fillx} \
+    .postrunopts.gfcombfr.marktimeyn {top frame center expand fillx} \
+    .postrunopts.gfcombfr.marktimenow {top frame center expand fillx} \
+    .postrunopts.gfcombfr.gfcombyn {top frame center expand fillx} \
+    .postrunopts.gfcombfr.gfconvyn {top frame center expand fillx} \
+    .postrunopts.gfcombfr.gfcombcleanup {top frame center expand fillx} \
+    .postrunopts.gfcombfr.gfcombinenow {top frame center expand fillx} \
+    .postrunopts.gfcombfr.gfconvertnow {top frame center expand fillx} \
+    .postrunopts.gfcombfr.cvtomij {top frame center expand fillx}
+ 
+  button .postrunopts.closepostrunopts \
+    -command {DestroyWindow.postrunopts} \
+    -state {active} \
+    -text {OK}
+
+  pack append .postrunopts \
+    .postrunopts.tsynthredvel {top frame center fill} \
+    .postrunopts.tsynthoffset {top frame center fill} \
+    .postrunopts.tsynthcb {top frame center fill} \
+    .postrunopts.gfcombfr {top frame center fillx} \
+    .postrunopts.closepostrunopts {top frame center fill}
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree .postrunopts"
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+proc DestroyWindow.postrunopts {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .postrunopts]" != ""} {
+      global xfShowWindow.postrunopts
+      set xfShowWindow.postrunopts 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .postrunopts; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .postrunopts"
+    update
+  }
+}

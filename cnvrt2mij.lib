@@ -1,0 +1,346 @@
+# Library of procedures for cnvrt2mij
+# Tcl version: 7.3
+# Tk version: 3.6
+#
+# Converts P and T axis or strike, dip, rake to moment tensor components
+#  following "A Student's Guide to and Review of Moment Tensors" by
+#  M. L. Jost and R. B. Herrmann
+#  Seismological Research Letters, vol 60, No 2 April-June, 1989 pp 37-57
+#
+# H. Philip Crotwell, October 27, 1995
+#
+# version 2.2, October 30, 1995
+
+proc pt2slipnormal {taz tpl paz ppl nuname uname} {
+upvar $nuname nu 
+upvar $uname u
+#
+# Usage: pt2slipnormal($taz $tpl $paz $ppl nuarray uarray)
+# Note: P and T azimuth and plunge are passed by value while nu and u are 
+#       passed by reference.
+#
+# Given azimuth and plunge for P and T axis pt2slipnormal computes, nu, the 
+# normal to the fault plane and the slip vector, u, which is contained within 
+# the fault plane. The convention is that the normal vector points from the 
+# foot wall into the hanging wall. For the auxillary plane u and nu are 
+# interchanged.
+#
+ 
+   set tcl_precision 17
+   set dtorad [expr 3.141592654/180.0]
+
+   if {$paz == "undef"} {set paz 0.0}
+   if {$taz == "undef"} {set taz 0.0}
+ 
+# if plunges are > 0 then use negative of P and T vectors to give fault
+# normal pointing from foot wall into hanging wall
+   set prev 1
+   if {$ppl > 0.0} { set prev -1}
+   set trev 1
+   if {$tpl > 0.0} { set trev -1}
+
+   set p(x) [expr $prev*cos($paz*$dtorad)*cos($ppl*$dtorad)]
+   set p(y) [expr $prev*sin($paz*$dtorad)*cos($ppl*$dtorad)]
+   set p(z) [expr $prev*sin($ppl*$dtorad)]
+   set t(x) [expr $trev*cos($taz*$dtorad)*cos($tpl*$dtorad)]
+   set t(y) [expr $trev*sin($taz*$dtorad)*cos($tpl*$dtorad)]
+   set t(z) [expr $trev*sin($tpl*$dtorad)]
+
+   foreach i {x y z} {
+      set u($i) [expr round(($t($i)+$p($i))*1000.0/sqrt(2.0))/1000.0]
+      set nu($i) [expr round(($t($i)-$p($i))*1000.0/sqrt(2.0))/1000.0]
+   }
+   if {$nu(z) > 0.0} {
+     foreach i {x y z} {
+      set u($i) [expr -1.0*$u($i)]
+      set nu($i) [expr -1.0*$nu($i)]
+     }
+   }
+}
+
+proc slipnormal2pt {tazname tplname pazname pplname nuname uname} {
+upvar $tazname taz
+upvar $tplname tpl
+upvar $pazname paz
+upvar $pplname ppl
+upvar $nuname nu
+upvar $uname u
+#
+# Usage: slipnormal2pt(taz tpl paz ppl nuarray uarray)
+# Note: P and T azimuth and plunge as well as nu and u are passed by reference 
+#       not value.
+#
+# Given nu, the normal to the fault plane, and the slip vector, u, which is 
+# contained within the fault plane, slipnormal2pt computes the azimuth and 
+# plunge for the P and T axis. The convention is that the normal vector 
+# points from the foot wall into the hanging wall. For the auxillary plane u 
+# and nu are interchanged.
+#
+ 
+   set tcl_precision 17
+   set dtorad [expr 3.141592654/180.0]
+ 
+   foreach i {x y z} {
+      set t($i) [expr ($nu($i)+$u($i))/sqrt(2.0)]
+      set p($i) [expr ($nu($i)-$u($i))/sqrt(2.0)]
+   }
+
+   if {$t(y) == 0.0 && $t(x) == 0.0 } {
+      set taz "undef"
+      set tpl "90"
+   } else {
+   set taz [expr atan2($t(y),$t(x))/$dtorad]
+   set tpl [expr atan2($t(z),hypot($t(y),$t(x)))/$dtorad]
+   set taz [expr round($taz*1000)/1000.0]
+   set tpl [expr round($tpl*1000)/1000.0]
+   if {$tpl < 0.0 } {set tpl [expr -1*$tpl];set taz [expr $taz+180]}
+   if {$taz < 0.0} {set taz [expr $taz+360]}
+   if {$taz >= 360.0} {set taz [expr $taz-360]}
+   }
+
+   if {$p(y) == 0.0 && $p(x) == 0.0 } {
+      set paz "undef"
+      set ppl "90.0"
+   } else {
+   set paz [expr atan2($p(y),$p(x))/$dtorad]
+   set ppl [expr atan2($p(z),hypot($p(y),$p(x)))/$dtorad]
+   set paz [expr round($paz*1000)/1000.0]
+   set ppl [expr round($ppl*1000)/1000.0]
+   if {$ppl < 0.0 } {set ppl [expr -1*$ppl];set paz [expr $paz+180]}
+   if {$paz < 0.0} {set paz [expr $paz+360]}
+   if {$paz >= 360.0} {set paz [expr $paz-360]}
+   }
+}
+
+proc sds2slipnormal {strike dip slip nuname uname} {
+upvar $nuname nu
+upvar $uname u
+#
+# Usage: sds2slipnormal($strike $dip $slip nuarray uarray)
+# Note: Strike, dip, and slip are passed by value while nuarray and uarray
+#       are passed by reference.
+#
+# Given the strike, dip, and slip, sds2slipnormal computes, nu, the
+# normal to the fault plane and the slip vector, u, which is contained within
+# the fault plane. The convention is that the normal vector points from the
+# foot wall into the hanging wall. For the auxillary plane u and nu are
+# interchanged.
+#
+ 
+   set tcl_precision 17
+   set dtorad [expr 3.141592654/180.0]
+
+   if {$strike == "undef"} {set strike 0.0}
+   
+   set strike [expr $strike*$dtorad]
+   set dip [expr $dip*$dtorad]
+   set slip [expr $slip*$dtorad]
+
+   set nu(x) [expr -sin($dip)*sin($strike)]
+   set nu(y) [expr sin($dip)*cos($strike)]
+   set nu(z) [expr -cos($dip)]
+
+   set u(x) [expr cos($slip)*cos($strike)+cos($dip)*sin($slip)*sin($strike)]
+   set u(y) [expr cos($slip)*sin($strike)-cos($dip)*sin($slip)*cos($strike)]
+   set u(z) [expr -sin($dip)*sin($slip)]
+
+   foreach i {x y z} {
+      set u($i) [expr round($u($i)*1000)/1000.0]
+      set nu($i) [expr round($nu($i)*1000)/1000.0]
+   }
+}
+
+proc slipnormal2sds {strikename dipname slipname nuname uname} {
+upvar $strikename strike
+upvar $dipname dip
+upvar $slipname slip
+upvar $nuname nu
+upvar $uname u
+#
+# Usage: slipnormal2sds(strike dip slip nuarray uarray)
+# Note: Strike, dip, and slip as well as nuarray and uarray
+#       are passed by reference.
+#
+# Given nu, the normal to the fault plane and the slip vector, u, which is 
+# contained within the fault plane, slipnormal2sds computes the strike, dip, 
+# and slip.# The convention is that the normal vector points from the
+# foot wall into the hanging wall. For the auxillary plane u and nu are
+# interchanged.
+#
+# Note that when calculating strike, dip and slip from slip and normal vectors
+# that give a small dip there will be larger errors in the calculated slip.
+ 
+   set tcl_precision 17
+   set dtorad [expr 3.141592654/180.0]
+
+   if {$nu(y) == 0.0 && $nu(x) == 0.0} {
+      set strike "undef"
+      set dip 0.0
+      set slip "undef"
+   } else {
+
+   if {$nu(z) > 0.0} {
+     foreach i {x y z} {
+      set u($i) [expr -1.0*$u($i)]
+      set nu($i) [expr -1.0*$nu($i)]
+     }
+   }
+
+   set strike [expr atan2($nu(y),$nu(x))/$dtorad+270.0]
+   set dip [expr atan2($nu(z),hypot($nu(x),$nu(y)))/$dtorad+90.0]
+   set tempu [expr ($u(x)*cos($strike*$dtorad)+$u(y)*sin($strike*$dtorad))]
+   if {$tempu > 1.0} {set tempu 1.0}
+   if {$tempu < -1.0} {set tempu -1.0}
+   set slip [expr acos($tempu)/$dtorad]
+   if {$u(z) > 0} { set slip [expr -1*$slip]}
+
+   set strike [expr round($strike*1000)/1000.0]
+   if {360.0-$strike < .01} { set strike [expr $strike-360.0]}
+   set dip [expr round($dip*1000)/1000.0]
+   set slip [expr round($slip*1000)/1000.0]
+  }
+}
+
+proc slipnormal2mij {mtname nuname uname} {
+upvar $mtname mt
+upvar $nuname nu
+upvar $uname u
+#
+# Usage: slipnormal2mij(mtarray nuarray uarray)
+# Note: mt, nuarray and uarray are passed by reference.
+#
+# Given nu, the normal to the fault plane and the slip vector, u, which is 
+# contained within the fault plane, slipnormal2mij computes the moment tensor.
+# The convention is that the normal vector points from the
+# foot wall into the hanging wall. For the auxillary plane u and nu are
+# interchanged.
+#
+ 
+   set tcl_precision 17
+   set dtorad [expr 3.141592654/180.0]
+
+   foreach i {x y z} {
+      foreach j {x y z} {
+         set mt($i$j) [expr round(10000*($u($i)*$nu($j)+$u($j)*$nu($i)))/10000.0]
+      }
+   }
+}
+
+proc mtxyz2mtcmt {mtxyzname mtcmtname} {
+upvar $mtxyzname mtxyz
+upvar $mtcmtname mtcmt
+#
+# Usage: mtxyz2mtcmt(mtxyz mtcmt)
+# Note: mtxyz and mtcmt are passed by reference.
+#
+# Conversion from a moment tensor in (x, y, z), (north, east, down) coordinates 
+# to the (r, s, e), (radius, epicentral distance, epicentral longitude)
+# coordiante system used in CMTs. See pp 117-118 of Aki and Richards for the
+# conversion, with (r, delta, phi) = (r, south, east).
+#
+
+   set mtcmt(rr) $mtxyz(zz);
+   set mtcmt(rs) $mtxyz(xz);
+   set mtcmt(re) [expr -1*$mtxyz(yz)];
+
+   set mtcmt(sr) $mtxyz(xz);
+   set mtcmt(ss) $mtxyz(xx);
+   set mtcmt(se) [expr -1*$mtxyz(xy)];
+
+   set mtcmt(er) [expr -1*$mtxyz(yz)];
+   set mtcmt(es) [expr -1*$mtxyz(xy)];
+   set mtcmt(ee) $mtxyz(yy);
+}
+
+proc mtcmt2mtxyz {mtcmtname mtxyzname} {
+upvar $mtcmtname mtcmt
+upvar $mtxyzname mtxyz
+#
+# Usage: mtcmt2mtxyz(mtcmt mtxyz)
+# Note: mtxyz and mtcmt are passed by reference.
+#
+# Conversion from a moment tensor in (r, delta, phi) = (r, s, e), 
+# (radius, epicentral distance, epicentral longitude) coordinates used in CMTs
+# to the (x, y, z), (north, east, down)
+# coordinate system. See pp 117-118 of Aki and Richards for the
+# conversion.
+#
+
+   set mtxyz(xx) $mtcmt(ss);
+   set mtxyz(xy) [expr -1*$mtcmt(se)];
+   set mtxyz(xz) $mtcmt(rs);
+
+   set mtxyz(yx) [expr -1*$mtcmt(se)];
+   set mtxyz(yy) $mtcmt(ee);
+   set mtxyz(yz) [expr -1*$mtcmt(re)];
+
+   set mtxyz(zx) $mtcmt(rs);
+   set mtxyz(zy) [expr -1*$mtcmt(re)];
+   set mtxyz(zz) $mtcmt(rr);
+}
+
+proc mtrotate {mtarrayname degree} {
+upvar $mtarrayname mt
+#
+# Usage: mtrotate(mtarray degree)
+# Note: mtarray is passed by reference
+#
+# Rotates a moment tensor by a horizontal angle. This would be used to
+# calculate seismograms for a station by using green's functions calculated
+# for a different azimuth. The rotation is accomplished by a matrix 
+# multiplication by the matrix below:
+#
+#            ( cos(angle)    -sin(angle)   0 )
+#            ( sin(angle)     cos(angle)   0 )
+#            (     0              0        1 )
+#
+   set tcl_precision 17
+   set angle [expr $degree*2*asin(1.0)/180.0]
+
+# set up rotation matrix transpose = inverse
+   set rott(xx) [expr cos($angle)]
+   set rott(xy) [expr sin($angle)]
+   set rott(yx) [expr -1*sin($angle)]
+   set rott(yy) [expr cos($angle)]
+   
+   set rott(xz) 0
+   set rott(yz) 0
+   set rott(zx) 0
+   set rott(zy) 0
+   set rott(zz) 1
+
+# set up rotation matrix
+   set rot(xx) [expr cos($angle)]
+   set rot(xy) [expr -1*sin($angle)]
+   set rot(yx) [expr sin($angle)]
+   set rot(yy) [expr cos($angle)]
+   
+   set rot(xz) 0
+   set rot(yz) 0
+   set rot(zx) 0
+   set rot(zy) 0
+   set rot(zz) 1
+   
+
+   foreach a {x y z} {
+      foreach b {x y z} {
+        set temp($a$b) [expr $rott(${a}x) * $mt(x$b) + \
+                          $rott(${a}y) * $mt(y$b) + \
+                          $rott(${a}z) * $mt(z$b)]
+      }
+   }
+   
+   foreach a {x y z} {
+      foreach b {x y z} {
+         set ans($a$b) [expr $temp(${a}x) * $rot(x${b}) + \
+                             $temp(${a}y) * $rot(y${b}) + \
+                             $temp(${a}z) * $rot(z${b})]
+      }
+   }
+   foreach a {x y z} {
+      foreach b {x y z} {
+         set mt($a$b) $ans(${a}$b)
+      }
+      puts "$mt(${a}x) $mt(${a}y) $mt(${a}z)"
+   }
+}

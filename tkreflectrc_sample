@@ -1,0 +1,161 @@
+#
+# Defaults for each user for tkreflect
+#
+# For other variables that you may wish to set see tkreflect.defaults
+#
+# rename this to .tkreflectrc in your home directory to set your defaults
+#
+# ${tkreflect_sourcedir} is the directory containing all of the source'ed
+# files used by tkreflect. It by default searches . ~/bin and /usr/local/bin
+# so this should be used to override these choices. Note that . is the first
+# choice even if tkreflect_sourcedir is defined.
+  global {tkreflect_sourcedir}
+  set {tkreflect_sourcedir} {/usr/local/Internal/TkReflect}
+#
+# alllistboxes is a list of all of the listboxes in the Define Model widget. 
+# The order here determines the order they are displayed.
+   set alllistboxes [list number depth thickness vp vs poisson rho qp qs pgradient sgradient gradparam]
+#
+#  local machine name, used for rcp (only paragon runs)
+  global {localmachinename}
+  set {localmachinename} {tigger.seis.sc.edu}
+#
+#  localprompt not currently used
+  global {localprompt}
+  set {localprompt} {penfold [0-9]+>}
+#
+#  directory on local machine, last name in path is name of working directory
+  global {localdir}
+  set {localdir} "[pwd]/RunDir"
+#
+#  machines for local p4 runs
+  global {localp4machines}
+  set {localp4machines} [list tigger penfold yoyo]
+#
+#  total nodes on remote machine (only paragon runs)
+  global {totalnodes}
+  set {totalnodes} {56}
+#
+#  maximum number of nodes to use for a run (only paragon runs)
+  global {maxwantednodes}
+  set {maxwantednodes} {16}
+#
+#  minimum number of free nodes needed to run (only paragon runs)
+#  if there are fewer than minwantednodes free then wait checking every 5 min.
+  global {minwantednodes}
+  set {minwantednodes} {8}
+#
+#  directory on remote machine to create temporary directories in (only paragon)
+  global {remotedir}
+  set {remotedir} {TkreflectRunDir}
+#
+#  remote paragon machine name (only paragon runs)
+  global {remotemachinename}
+  set {remotemachinename} {samson.csd.sc.edu}
+#
+#  prompt on remote machine, regular expression format (only paragon runs)
+#  for example my prompt looks like "crotwell@samson 21 % " so I use
+#  set {remoteprompt} {crotwell@samson [0-9]+ % }
+  global {remoteprompt}
+  set {remoteprompt} {crotwell@samson [0-9]+ % }
+#
+#  name of model file to create, read model overwrites this
+  global {modelfilename}
+  set {modelfilename} "[pwd]/model"
+#
+#  maximum run time before killing a run (only paragon runs)
+  global {maxruntime}
+  set {maxruntime} 14400
+
+#
+#  extract greens functons from spectral file mspec?
+  global {tsynthyn}
+  set {tsynthyn} {1}
+#
+#  z positive up?
+  global {zpositiveup}
+  set zpositiveup 1
+#
+#  displacement, -d, or velocity, -v, seismograms
+  global {tsynthdorv}
+  set {tsynthdorv} {-d}
+#
+#  step, -s, or impulse, -i, source time function
+  global {tsynthsori}
+  set {tsynthsori} {-s}
+#
+# reducing velocity for begining of seismograms
+  global {tsynthredvel}
+  set {tsynthredvel} {8.1}
+#
+#  offset from reduced begining time for begining of seismograms
+  global {tsynthoffset}
+  set {tsynthoffset} {-10.0}
+#
+#  combine greens functions using given source?
+  global {gfcombineyn}
+  set {gfcombineyn} {1}
+#
+#  mark theoretical first arrival time in SAC header A?
+  global {marktimeyn}
+  set {marktimeyn} {1}
+ 
+#
+#  run location, local or paragon
+  global {runloc}
+  set {runloc} {paragon}
+#
+#  code type, mijkennett mijfkkennett or mgenkennett
+  global {codetype}
+  set {codetype} {mijkennett}
+#
+#  list of station names for array spacing option, make sure each has lat and 
+#  lon in stalatlon array
+  global arraystanames
+  set arraystanames \
+       [list amdo budo erdo ganz lhsa sang tunl wndo xiga maqi ushu]
+#
+#  list of stations to compute synthetics for, should be a subset of the
+#  stations in arraystanames
+  global stalist
+  set stalist $arraystanames
+#
+#  lats and lons for each station in list arraystanames above 
+  global stalatlon
+  set stalatlon(amdo,lat) 32.247
+  set stalatlon(amdo,lon) 91.688
+  set stalatlon(budo,lat) 35.529
+  set stalatlon(budo,lon) 93.910
+  set stalatlon(erdo,lat) 34.520
+  set stalatlon(erdo,lon) 92.707
+  set stalatlon(ganz,lat) 29.767
+  set stalatlon(ganz,lon) 94.050
+  set stalatlon(lhsa,lat) 29.702
+  set stalatlon(lhsa,lon) 91.128
+  set stalatlon(sang,lat) 31.024
+  set stalatlon(sang,lon) 91.700
+  set stalatlon(tunl,lat) 36.199
+  set stalatlon(tunl,lon) 94.815
+  set stalatlon(wndo,lat) 33.448
+  set stalatlon(wndo,lon) 91.904
+  set stalatlon(xiga,lat) 29.234
+  set stalatlon(xiga,lon) 88.851
+  set stalatlon(maqi,lat) 34.478
+  set stalatlon(maqi,lon) 100.249
+  set stalatlon(ushu,lat) 33.011
+  set stalatlon(ushu,lon) 97.015
+#
+#  parameter to controll number of new layers for EFT, minimum layer 
+#  thinkness is approximatly flattenparam
+  global flattenparam
+  set {flattenparam} 1.0
+#
+#  parameter to controll number of new layers for gradient, minimum layer 
+#  thickness is approximatly gradientparam, can be set to $flattenparam
+#  this sets the default parameter but each layer can have a different value
+  global gradientparam
+  set {gradientparam} $flattenparam
+#
+#  number of layers to be displayed in definemodel window
+  global dispnumlayers
+  set dispnumlayers 10

@@ -1,0 +1,176 @@
+#!/bin/sh
+# \
+exec wish -f $0 $*
+
+# Program: cnvrt2mij
+# Tcl version: 7.3 (Tcl/Tk/XF)
+# Tk version: 3.6
+# XF version: 2.3
+#
+# Converts P and T axis or strike, dip, rake to moment tensor components
+#  following "A Student's Guide to and Review of Moment Tensors" by
+#  M. L. Jost and R. B. Herrmann
+#  Seismological Research Letters, vol 60, No 2 April-June, 1989 pp 37-57
+#
+# Philip Crotwell, Sept 7, 1995
+#
+# version 2.2, October 30, 1995
+
+set {tkreflect_sourcedir} {.}
+if [file exists ~/.tkreflectrc] {
+   source ~/.tkreflectrc
+}
+if [file exists .tkreflectrc] {
+   source .tkreflectrc
+}
+
+if [info exists thesourcefiles] {unset thesourcefiles}
+lappend thesourcefiles {tkreflect.defaults}
+lappend thesourcefiles {cnvrt2mij.lib}
+lappend thesourcefiles {tkreflect.moment}
+
+
+# source cnvrt2mij.lib which contains pt2slipnormal, slipnormal2pt, 
+# sds2slipnormal, slipnormal2sds and slipnormal2mij procedures
+#
+foreach sourcefile $thesourcefiles {
+   if [file exists ./$sourcefile] {
+      source ./$sourcefile
+   } elseif [file exists ${tkreflect_sourcedir}/$sourcefile] {
+      source "${tkreflect_sourcedir}/$sourcefile"
+   } elseif [file exists ~/bin/$sourcefile] {
+      source ~/bin/$sourcefile
+   } elseif [file exists /usr/local/bin/$sourcefile] {
+      source /usr/local/bin/$sourcefile
+   } else {
+      puts "Can't find $sourcefile in"
+      puts "${tkreflect_sourcedir}, ., ~/bin, or /usr/local/bin."
+      puts "Exiting"
+      exit 0
+   }
+}
+
+ 
+unset thesourcefiles
+unset sourcefile
+# Resource each users defaults.
+# Source the one in ~ first and then the one in the current directory so
+# that the current directory overwrites the values from ~
+if [file exists ~/.tkreflectrc] {
+   source ~/.tkreflectrc
+}
+if [file exists .tkreflectrc] {
+   source .tkreflectrc
+}
+ 
+# unset tkreflect_sourcedir as it is no longer needed and we don't want it
+# in the save all file
+unset tkreflect_sourcedir
+
+proc DestroyWindow.moment {} {# xf ignore me 7
+  if {"[info procs XFEdit]" != ""} {
+    if {"[info commands .moment]" != ""} {
+      global xfShowWindow.moment
+      set xfShowWindow.moment 0
+      XFEditSetPath .
+      after 2 "XFSaveAsProc .moment; XFEditSetShowWindows"
+    }
+  } {
+    catch "destroy .moment"
+    update
+  }
+}
+
+
+# procedure to show window .
+proc ShowWindow. {args} {# xf ignore me 7
+
+  # Window manager configurations
+  global tkVersion
+  wm positionfrom . user
+  wm sizefrom . ""
+  wm maxsize . 1152 900
+  wm title . {xf}
+
+
+  # build widget .button0
+  button .button0 \
+    -command {ShowWindow.moment} \
+    -text {Calculate Moment}
+
+  # build widget .quit
+  button .quit \
+    -command {destroy .} \
+    -text {Quit}
+
+  # pack widget .
+  pack append . \
+    .button0 {top frame center} \
+    .quit {top frame center fillx}
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFMiscBindWidgetTree ."
+    after 2 "catch {XFEditSetShowWindows}"
+  }
+}
+
+
+# User defined procedures
+
+# Internal procedures
+
+# initialize global variables
+proc InitGlobals {} {
+  global {mtarray}
+  set {mtarray(xx)} {0.0}
+  set {mtarray(xy)} {-0.2199}
+  set {mtarray(xz)} {-0.262}
+  set {mtarray(yy)} {-0.9259}
+  set {mtarray(yz)} {-0.1631}
+  set {mtarray(zz)} {0.9253}
+
+  global {paz}
+  set {paz} {75.91}
+  global {ppl}
+  set {ppl} {6.58}
+  global {taz}
+  set {taz} {192.69}
+  global {tpl}
+  set {tpl} {75.65}
+
+  global {strikea}
+  set {strikea} {180.0}
+  global {dipa}
+  set {dipa} {40.0}
+  global {slipa}
+  set {slipa} {110.0}
+  global {strikeb}
+  set {strikeb} {334.59}
+  global {dipb}
+  set {dipb} {52.85}
+  global {slipb}
+  set {slipb} {74.0}
+
+  global {nuvector}
+  set {nuvector(x)} {0.0}
+  set {nuvector(y)} {-0.643}
+  set {nuvector(z)} {-0.766}
+  global {uvector}
+  set {uvector(x)} {0.342}
+  set {uvector(y)} {0.72}
+  set {uvector(z)} {-0.604}
+}
+
+# initialize global variables
+InitGlobals
+
+# display/remove toplevel windows.
+ShowWindow.
+
+global xfShowWindow.moment
+set xfShowWindow.moment 1
+ShowWindow.moment
+
+# eof
+#
+

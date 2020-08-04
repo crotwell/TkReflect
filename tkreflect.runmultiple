@@ -1,0 +1,11 @@
+proc RunMultiple {} {
+#
+# makes multiple runs looping over given variables
+# for an example see tkreflect.runmultiple_sample
+#
+global runmessage
+global runinprogress
+ 
+ShowWindow.alert "See tkreflect.runmultiple_sample for instructions!"
+set runinprogress 0
+}

@@ -1,0 +1,37 @@
+proc ShowWindow.alert {{themessage "????"}} {
+
+  if {"[info procs XFEdit]" != ""} {
+    catch "XFDestroy .alert"
+  } {
+    catch "destroy .alert"
+  }
+
+  toplevel .alert  \
+    -borderwidth {2} \
+    -relief {raised}
+
+  global tkVersion
+  wm title .alert {Alert!}
+
+  message .alert.message \
+    -aspect {1500} \
+    -justify {center} \
+    -padx {5} \
+    -pady {2} \
+    -relief {raised} \
+    -text "$themessage"
+
+  button .alert.button_OK \
+    -command {
+              DestroyWindow.alert } \
+    -text {OK}
+
+  pack append .alert \
+    .alert.message {top frame center expand fillx} \
+    .alert.button_OK {left frame center expand fillx}
+}
+
+proc DestroyWindow.alert {} {
+    catch "destroy .alert"
+    update
+}

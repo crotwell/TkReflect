@@ -1,0 +1,470 @@
+#
+# Default values for variables used by tkreflect.
+#
+#
+#  local machine name, used for rcp (only paragon runs)
+  global {localmachinename}
+  set {localmachinename} {tigger.seis.sc.edu}
+#
+#  localprompt not currently used
+  global {localprompt}
+  set {localprompt} {penfold [0-9]+>}
+#
+#  directory on local machine, last name in path is name of working directory
+  global {localdir}
+  set {localdir} [pwd]
+#
+#  machines for local p4 runs
+  global {localp4machines}
+  set {localp4machines} [list penfold tigger yoyo]
+#
+#  total nodes on remote machine (only paragon runs)
+  global {totalnodes}
+  set {totalnodes} {56}
+#
+#  maximum number of nodes to use for a run (only paragon runs)
+  global {maxwantednodes}
+  set {maxwantednodes} {16}
+#
+#  minimum number of free nodes needed to run (only paragon runs)
+#  if there are fewer than minwantednodes free then wait checking every 5 min.
+  global {minwantednodes}
+  set {minwantednodes} {2}
+#
+#  directory on remote machine to create temporary directories in (only paragon)
+  global {remotedir}
+  set {remotedir} {TkreflectRunDir}
+#
+#  remote paragon machine name (only paragon runs)
+  global {remotemachinename}
+  set {remotemachinename} {samson.csd.sc.edu}
+#
+#  prompt on remote machine, regular expression format (only paragon runs)
+  global {remoteprompt}
+  set {remoteprompt} {crotwell@samson [0-9]+ % }
+#
+#  name of model file to create, read model overwrites this
+  global {modelfilename}
+  set {modelfilename} "[pwd]/model"
+#
+#  maximum run time before killing a run (only paragon runs)
+  global {maxruntime}
+  set {maxruntime} 14400
+
+#
+#  extract greens functons from spectral file mspec?
+  global {tsynthyn}
+  set {tsynthyn} {1}
+#
+# z positive up, if so then tkreflect uses spec2zrt instead of tsynth
+  global {zpositiveup}
+  set zpositiveup 1
+#
+#  displacement or velocity seismograms
+  global {tsynthdorv}
+  set {tsynthdorv} {-d}
+#
+#  step or impulse source time function
+  global {tsynthsori}
+  set {tsynthsori} {-s}
+#
+# reducing velocity for begining of seismograms
+  global {tsynthredvel}
+  set {tsynthredvel} {8.1}
+#
+#  offset from reduced begining time for begining of seismograms
+  global {tsynthoffset}
+  set {tsynthoffset} {-10.0}
+#
+#  combine greens functions using given source?
+  global {gfcombineyn}
+  set {gfcombineyn} {0}
+#
+#  clean up greens functions after combining?
+  global {gfcombinecleanup}
+  set {gfcombinecleanup} {1}
+#
+#  mark theoretical first arrival time in SAC header A?
+  global {marktimeyn}
+  set {marktimeyn} {0}
+#
+#  moment magnitude
+  global {mw}
+  set {mw} {5.0}
+#
+#  seismic moment, used to scale greens functions
+  global {moment}
+  set {moment} [expr 3.9*pow(10,16)]
+
+#
+#  P azimuth
+  global {paz}
+  set {paz} {324.74}
+#
+#  P plunge
+  global {ppl}
+  set {ppl} {30.0}
+#
+#  T azimuth
+  global {taz}
+  set {taz} {215.26}
+#
+#  T plunge
+  global {tpl}
+  set {tpl} {30.0}
+ 
+#
+#  strike of fault plane
+  global {strikea}
+  set {strikea} {0.0}
+#
+#  dip of fault plane
+  global {dipa}
+  set {dipa} {45.0}
+#
+#  slip of fault plane
+  global {slipa}
+  set {slipa} {0.0}
+#
+#  strike of auxilary plane
+  global {strikeb}
+  set {strikeb} {270.0}
+#
+#  dip of auxilary plane
+  global {dipb}
+  set {dipb} {90.0}
+#
+#  slip of auxilary plane
+  global {slipb}
+  set {slipb} {135.0}
+
+#
+#  normal vector from foot wall to hanging wall of fault plane, also slip
+#  vector of auxilary plane
+  global {nuvector}
+  set {nuvector(x)} {0.0}
+  set {nuvector(y)} {0.707}
+  set {nuvector(z)} {-0.707}
+#
+#  slip vector of fault plane, also normal vector of auxilary plane
+  global {uvector}
+  set {uvector(x)} {1.0}
+  set {uvector(y)} {0.0}
+  set {uvector(z)} {0.0}
+#
+#  moment tensor
+  global {mtarray}
+  set {mtarray(xx)} {0.0}
+  set {mtarray(xy)} {0.707}
+  set {mtarray(xz)} {-0.707}
+  set {mtarray(yy)} {0.0}
+  set {mtarray(yz)} {-0.0}
+  set {mtarray(zz)} {-0.0}
+#
+#  cmt moment tensor
+  global {mtcmtarray}
+  set {mtcmtarray(rr)} {0.0}
+  set {mtcmtarray(rs)} {0.707}
+  set {mtcmtarray(re)} {-0.707}
+  set {mtcmtarray(ss)} {0.0}
+  set {mtcmtarray(se)} {-0.0}
+  set {mtcmtarray(ee)} {-0.0}
+
+#
+#  run location, local or paragon
+  global {runloc}
+  set {runloc} {local}
+#
+#  code type, mijkennett mijfkkennett or mgenkennett
+  global {codetype}
+  set {codetype} {mijkennett}
+#
+#  station names for array spacing
+  global arraystanames
+  set arraystanames \
+       [list amdo budo erdo ganz lhsa sang tunl wndo xiga maqi ushu]
+  global stalist
+  set stalist $arraystanames
+#
+#  lat and lon for each station in arraystanames
+  global stalatlon
+  set stalatlon(amdo,lat) 32.247
+  set stalatlon(amdo,lon) 91.688
+  set stalatlon(budo,lat) 35.529
+  set stalatlon(budo,lon) 93.910
+  set stalatlon(erdo,lat) 34.520
+  set stalatlon(erdo,lon) 92.707
+  set stalatlon(ganz,lat) 29.767
+  set stalatlon(ganz,lon) 94.050
+  set stalatlon(lhsa,lat) 29.702
+  set stalatlon(lhsa,lon) 91.128
+  set stalatlon(sang,lat) 31.024
+  set stalatlon(sang,lon) 91.700
+  set stalatlon(tunl,lat) 36.199
+  set stalatlon(tunl,lon) 94.815
+  set stalatlon(wndo,lat) 33.448
+  set stalatlon(wndo,lon) 91.904
+  set stalatlon(xiga,lat) 29.234
+  set stalatlon(xiga,lon) 88.851
+  set stalatlon(maqi,lat) 34.478
+  set stalatlon(maqi,lon) 100.249
+  set stalatlon(ushu,lat) 33.011
+  set stalatlon(ushu,lon) 97.015
+#
+#
+  global evtdistaz
+
+#
+#    Parameters directly used to generate the Randall input file
+#
+#  number of layers in model, including half space
+  global {numlayers}
+  set {numlayers} {3}
+#
+#  apply earth flattening transform?
+  global {eftyn}
+  set {eftyn} {1}
+#
+#  parameter to controll number of new layers for EFT, minimum layer thickness
+#  is approximatly flattenparam
+  global flattenparam
+  set {flattenparam} 1.0
+#
+#  parameter to controll number of new layers for gradient, minimum layer 
+#  thickness is approximatly gradientparam, can be set to $flattenparam
+#  gradientparam can be controlled individually for each layer
+  global gradientparam
+  set {gradientparam} $flattenparam
+#
+#  preserve poissons ratio when calculating gradients. If 1 then the size of
+#  the S gradient is calculated from the P gradient so as to keep poissons
+#  ratio constant over the gradient layers. If not then the S gradient is
+#  independent of the P gradient
+  global prespoisson
+  set prespoisson 1
+#
+#  display poisson's ratio or vp/vs
+  global poissonratio
+  set poissonratio 1
+#
+#
+#  whether or not to calculate average properties. This can cause the define
+#  model widget to be slow to open
+  global avepropyn
+  set avepropyn 0
+#  limits for calculating average properties
+  global average_top
+  set average_top 0
+  global average_bot
+  set average_bot 0
+#
+#  parameter for interpreting cubics in PREM model
+  global stdmodelparam
+  set stdmodelparam 20.0
+#
+#  maximum depth for PREM model
+  global stdmodeldepth
+  set stdmodeldepth 300.0
+#
+#  associative array holding all information about each layer.
+#  pgradient is the gradient to put in a layer for P velocities, S is 
+#  similar. No gradient is applied if gradientyn is 0.0
+  global {layer}
+  set {layer(1,pgradient)} {0.0}
+  set {layer(1,sgradient)} {0.0}
+  set {layer(1,gradparam)} $gradientparam
+  set {layer(1,qp)} {1000}
+  set {layer(1,qs)} {500.}
+  set {layer(1,rho)} {2.70}
+  set {layer(1,thickness)} {40.}
+  set {layer(1,vp)} {6.50}
+  set {layer(1,vs)} {3.75}
+  set {layer(2,pgradient)} {0.0}
+  set {layer(2,sgradient)} {0.0}
+  set {layer(2,gradparam)} $gradientparam
+  set {layer(2,qp)} {2000.}
+  set {layer(2,qs)} {1000.}
+  set {layer(2,rho)} {3.32}
+  set {layer(2,thickness)} {60.}
+  set {layer(2,vp)} {8.10}
+  set {layer(2,vs)} {4.67}
+  set {layer(3,pgradient)} {0.0}
+  set {layer(3,sgradient)} {0.0}
+  set {layer(3,gradparam)} $gradientparam
+  set {layer(3,qp)} {2000.}
+  set {layer(3,qs)} {1000.}
+  set {layer(3,rho)} {3.32}
+  set {layer(3,thickness)} {00.}
+  set {layer(3,vp)} {8.10}
+  set {layer(3,vs)} {4.67}
+#
+#  These 4 are not currently used by Randall's codes but should be set in case
+#  they are used later
+  global {plowcorner}
+  set {plowcorner} {1.e4}
+  global {phighcorner}
+  set {phighcorner} {0.0001}
+  global {slowcorner}
+  set {slowcorner} {1.e4}
+  global {shighcorner}
+  set {shighcorner} {0.0001}
+#
+#
+#  Slowness parameters
+  global {lowcut}
+  set {lowcut} {0.005}
+  global {lowpass}
+  set {lowpass} {0.01}
+  global {highpass}
+  set {highpass} {0.5}
+  global {highcut}
+  set {highcut} {0.6}
+  global {controlfac}
+  set {controlfac} {1.}
+#
+#   frequency parameters
+#
+#  minimum frquency synthesized
+  global {fmin}
+  set {fmin} {0.0}
+#
+#  maximum frquency synthesized
+  global {fmax}
+  set {fmax} {1.00}
+#
+#  nyquist frequency, number of samples per second/2, should always be >= fmax
+  global {fnyquist}
+  set {fnyquist} {1.00}
+#
+#  number of time points in final synthetic
+  global {numtimepoints}
+  set {numtimepoints} {1024}
+#
+#
+#  distance parameters
+#
+#  if > 0 distance, if = 0 then use regular distances, if < 0 use irregular
+  global {distance}
+  set {distance} {0.0}
+#
+#  azimuth to calculate synthetics at. Since isotropic the greens functions
+#  can be rotated to any new azimuth. 0.0 is a good choice leaving only 8 out
+#  of 18 greens functions non-identically zero.
+  global {azimuth}
+  set {azimuth} {0.0}
+#
+#  holds single distance when switching from one type of distances to another
+  global {singledistance}
+  set {singledistance} {1000.0}
+#
+#  regular, irregular, single or irregArray
+  global {typedistance}
+  set {typedistance} {regular}
+#
+#  minimum distance for regular case
+  global {rmindist}
+  set {rmindist} {200.}
+#
+#  receiver delta distance for regular case
+  global {rdeltadist}
+  set {rdeltadist} {100.}
+#
+#  number of distances for regular and irregular cases
+  global {numrdist}
+  set {numrdist} {8}
+#
+#  receiver distances for holding irregular distances and displaying regular
+  global {rdistances}
+  set {rdistances} {100. 200.0 300.0 400.0 500.0 600.0 700.0}
+#
+#  source latitude and longitude, for computing distances in irregArray case
+  global {sourcelat}
+  set {sourcelat} {28.15}
+  global {sourcelon}
+  set {sourcelon} {87.98}
+#
+#
+#  receiver depth, usually 0.0 at surface, must be above source
+  global {receiverdepth}
+  set {receiverdepth} {0.0}
+#
+#  number of sources
+  global {numsources}
+  set {numsources} {1}
+#
+#  list of source depths, all must be in the same layer and below the receiver
+  global {sourcedepth}
+  set {sourcedepth} {10.}
+#
+#  flatten source depth? Only needed for deeper sources.
+  global {flatsourcedepth}
+  set flatsourcedepth 0
+#
+#  flatten receiver depth? Only needed for deeper receivers.
+  global {flatreceiverdepth}
+  set flatreceiverdepth 0
+#
+#  parameter for differential seismograms
+  global {diffparam}
+  set {diffparam} 1
+
+#
+#  End of variables directly related to Randall input file
+#
+#
+# alllistboxes are all of the listboxes in the Define Model widget. 
+# The order here determines the order they are displayed. Any listboxes not that
+# don't correspond to variables in the layer array will have to have
+# code added to Split, Delete, Duplicate, and resetListBoxEntries for them 
+# to function correctly
+   global alllistboxes
+   set alllistboxes [list number depth thickness vp vs poisson rho qp qs pgradient sgradient gradparam]
+#
+# layerlistboxes are listboxes corresponding to variables in the layer array.
+   global layerlistboxes
+   foreach l $alllistboxes {
+     if [info exists layer(1,$l)] {lappend layerlistboxes $l}
+   }
+   unset l
+#  set layer parameter defaults in case we read in a layer array that doesn't
+#  have all values initialized, used in tkreflect.readsave
+   global layerdefaults
+   set layerdefaults(pgradient) 0.0
+   set layerdefaults(sgradient) 0.0
+   foreach l $layerlistboxes {
+       if {![info exists layerdefaults($l)]} {
+         set layerdefaults($l) 1.0
+       }
+   }
+   unset l
+#
+#  message displayed in tkreflect main window
+  global {runmessage}
+  set runmessage {Idle.}
+#
+#   number of layers displayed in define model
+  global {dispnumlayers}
+  set {dispnumlayers} {10}
+
+#
+#  global variables used by fsBox, file selector box
+  global {fsBox}
+  set {fsBox(activeBackground)} {}
+  set {fsBox(activeForeground)} {}
+  set {fsBox(all)} {0}
+  set {fsBox(background)} {}
+  set {fsBox(button)} {0}
+  set {fsBox(extensions)} {0}
+  set {fsBox(font)} {}
+  set {fsBox(foreground)} {}
+  set {fsBox(internalPath)} [pwd]
+  set {fsBox(name)} {model}
+  set {fsBox(path)} [pwd]
+  set {fsBox(pattern)} {*}
+  set {fsBox(scrollActiveForeground)} {}
+  set {fsBox(scrollBackground)} {}
+  set {fsBox(scrollForeground)} {}
+  set {fsBox(scrollSide)} {left}
+  set {fsBox(showPixmap)} {0}
+  global {fsBoxExtensions}
+  set {fsBoxExtensions} {0}

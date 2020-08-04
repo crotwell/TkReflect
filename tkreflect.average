@@ -1,0 +1,197 @@
+
+proc averageProperties {layername numlayers udepth ldepth} {
+  upvar $layername layer
+
+  set tcl_precision 17
+
+  set depth 0.0
+  set ptt 0.0
+  set stt 0.0
+  set arho 0.0
+
+  for {set i 1} {$i < $numlayers} {incr i} {
+    set top $depth
+    set depth [expr $depth + $layer($i,thickness)]
+    set bot $depth
+
+    if {$bot < $udepth} {continue}       # we are still above the upper depth
+
+     if {$top < $udepth && $bot > $udepth && $top < $ldepth && $bot > $ldepth} {
+# this layer contains both points
+#
+       set ptt [expr ($ldepth- $udepth)/$layer($i,vp)]
+       set stt [expr ($ldepth- $udepth)/$layer($i,vs)]
+       set arho $layer($i,rho)
+       break
+
+     } elseif {$top < $udepth && $bot > $udepth} {
+# this layer contains the upper point
+#
+       set ptt [expr ($bot - $udepth)/$layer($i,vp)]
+       set stt [expr ($bot - $udepth)/$layer($i,vs)]
+       set arho [expr ($bot - $udepth)*$layer($i,rho)]
+
+     } elseif {$top < $ldepth && $bot > $ldepth} {
+# this layer contains the lower point
+#
+        set ptt [expr $ptt + ($ldepth-$top)/$layer($i,vp)]
+        set stt [expr $stt + ($ldepth-$top)/$layer($i,vs)]
+        set arho [expr $arho + ($ldepth-$top)*$layer($i,rho)]
+
+     } elseif {$top >= $udepth && $bot <= $ldepth}  {
+# this layer is between upper and lower points
+#
+        set ptt [expr $ptt + $layer($i,thickness)/$layer($i,vp)]
+        set stt [expr $stt + $layer($i,thickness)/$layer($i,vs)]
+        set arho [expr $arho + $layer($i,thickness)*$layer($i,rho)]
+     }
+  }
+  set avp [expr ($ldepth-$udepth)/$ptt]
+  set avs [expr ($ldepth-$udepth)/$stt]
+  set arho [expr $arho/($ldepth-$udepth)]
+
+  return [list $avp $avs $arho]
+}
+
+proc nonnormalTTime {layername numlayers udepth ldepth takeoff} {
+  upvar $layername layer
+
+  set tcl_precision 17
+  set deg_to_rad 0.017453292
+  set rad_to_deg 57.29577951
+
+  set depth 0.0
+  set ptt 0.0
+  set stt 0.0
+
+# find ray parameter
+  for {set i 1} {$i < $numlayers} {incr i} {
+    set top $depth
+    set depth [expr $depth + $layer($i,thickness)]
+    set bot $depth
+
+    if {$bot > $udepth} {
+       set prayparam [expr sin($takeoff*$deg_to_rad)/$layer($i,vp)]
+       set srayparam [expr sin($takeoff*$deg_to_rad)/$layer($i,vs)]
+       break
+    }
+  }
+
+  for {set i 1} {$i < $numlayers} {incr i} {
+    set top $depth
+    set depth [expr $depth + $layer($i,thickness)]
+    set bot $depth
+
+    if {$bot < $udepth} {continue}       # we are still above the upper depth
+
+    if {$prayparam > 1.0/$layer($i,vp) } {
+       send_user "Error: Ray Paramter greater than slowness for P\n"
+       send_user "Ray Parameter $prayparam, vp $layer($i,vp), i $i\n"
+       exit
+    }
+    if {$srayparam > 1.0/$layer($i,vs) } {
+       send_user "Error: Ray Paramter greater than slowness for S\n"
+       send_user "Ray Parameter $srayparam, vs $layer($i,vs), i $i\n"
+       exit
+    }
+
+# set factor for velocity and ray parameter
+    set pfac [expr pow($layer($i,vp),2)*sqrt(1.0/pow($layer($i,vp),2) \
+                   -pow($prayparam,2))]
+    set sfac [expr pow($layer($i,vs),2)*sqrt(1.0/pow($layer($i,vs),2) \
+                   -pow($srayparam,2))]
+
+     if {$top < $udepth && $bot > $udepth && $top < $ldepth && $bot > $ldepth} {
+# this layer contains both points
+#
+       set ptt [expr ($ldepth- $udepth)/$pfac]
+       set stt [expr ($ldepth- $udepth)/$sfac]
+       break
+
+     } elseif {$top < $udepth && $bot > $udepth} {
+# this layer contains the upper point
+#
+       set ptt [expr ($bot - $udepth)/$pfac]
+       set stt [expr ($bot - $udepth)/$sfac]
+
+     } elseif {$top < $ldepth && $bot > $ldepth} {
+# this layer contains the lower point
+#
+        set ptt [expr $ptt + ($ldepth-$top)/$pfac]
+        set stt [expr $stt + ($ldepth-$top)/$sfac]
+
+     } elseif {$top >= $udepth && $bot <= $ldepth}  {
+# this layer is between upper and lower points
+#
+        set ptt [expr $ptt + $layer($i,thickness)/$pfac]
+        set stt [expr $stt + $layer($i,thickness)/$sfac]
+     }
+  }
+
+  return [list $ptt $stt]
+}
+
+proc vttime {mfile udepth ldepth} {
+
+   source $mfile
+
+   set depth 0.0
+   set tt 0.0
+
+   for {set i 1} {$i < $numlayers} {incr i} {
+     set top $depth
+     set depth [expr $depth + $layer($i,thickness)]
+     set bot $depth
+
+     if {$bot < $udepth} {continue}       # we are still above the upper depth
+
+     if {$layer($i,pgradient) != 0} {
+
+       if {$top < $udepth && $bot > $udepth && $top < $ldepth && $bot > $ldepth} {
+        # this layer contains both points
+
+         set tt [expr log(($layer($i,vp)+$layer($i,pgradient)*($ldepth-$top))/$layer($i,vp)+$layer($i,pgradient)*($bot - $udepth))/$layer($i,pgradient)]
+         break
+
+       } elseif {$top < $udepth && $bot > $udepth} {
+        # this layer contains the upper point
+        #
+        set tt [expr log(($layer($i,vp)+$layer($i,pgradient)*$layer($i,thickness))/$layer($i,vp)+$layer($i,pgradient)*($bot - $udepth))/$layer($i,pgradient)]
+
+       } elseif {$top < $ldepth && $bot > $ldepth} {
+        # this layer contains the lower point
+        #
+         set tt [expr $tt + log(($layer($i,vp)+$layer($i,pgradient)*($ldepth-$top))/$layer($i,vp))/$layer($i,pgradient)]
+
+       } elseif {$top >= $udepth && $bot <= $ldepth}  {
+        # this layer is between upper and lower points
+        #
+         set tt [expr $tt + log(($layer($i,vp)+$layer($i,pgradient)*$layer($i,thickness))/$layer($i,vp))/$layer($i,pgradient)]
+       }
+      } else {
+
+       if {$top < $udepth && $bot > $udepth && $top < $ldepth && $bot > $ldepth} {
+        # this layer contains both points
+
+         set tt [expr ($ldepth- $udepth)/$layer($i,vp)]
+         break
+
+       } elseif {$top < $udepth && $bot > $udepth} {
+        # this layer contains the upper point
+        #
+        set tt [expr ($bot - $udepth)/$layer($i,vp)]
+
+       } elseif {$top < $ldepth && $bot > $ldepth} {
+        # this layer contains the lower point
+        #
+         set tt [expr $tt + ($ldepth-$top)/$layer($i,vp)]
+
+       } elseif {$top >= $udepth && $bot <= $ldepth}  {
+        # this layer is between upper and lower points
+        #
+         set tt [expr $tt + $layer($i,thickness)/$layer($i,vp)]
+       }
+      }
+   }
+return $tt
+}
